@@ -1,0 +1,99 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #0B1D3A; /* Azul oscuro corporativo MASS */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.login-box {
+    width: 400px;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+    overflow: hidden;
+}
+
+.login-logo {
+    padding: 35px 20px 10px;
+    text-align: center;
+}
+
+.login-logo h2 {
+    font-size: 26px;
+    color: #0B1D3A;
+    font-weight: 500;
+}
+
+.login-logo b {
+    font-size: 34px;
+    color: #FFD100; /* Amarillo MASS */
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    font-weight: 900;
+}
+
+.login-card-body {
+    padding: 20px 40px 40px;
+}
+
+.login-box-msg {
+    text-align: center;
+    color: #888;
+    margin-bottom: 30px;
+    font-size: 14px;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 15px;
+    border: 1px solid #e1e5eb;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    outline: none;
+    font-size: 15px;
+    color: #333;
+    transition: all 0.3s ease;
+}
+
+.input-group input:focus {
+    background-color: #fff;
+    border-color: #0B1D3A;
+    box-shadow: 0 0 0 3px rgba(11, 29, 58, 0.1);
+}
+
+.btn-login {
+    width: 100%;
+    background: #FFD100; /* Botón Amarillo */
+    color: #0B1D3A; /* Texto oscuro para máximo contraste */
+    border: none;
+    padding: 15px;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+.btn-login:hover {
+    background: #e6bc00;
+    transform: translateY(-2px); /* Se eleva un poquito al pasar el mouse */
+    box-shadow: 0 5px 15px rgba(255, 209, 0, 0.3);
+}
+
+.btn-login:active {
+    transform: translateY(0); /* Efecto de click realista */
+}
