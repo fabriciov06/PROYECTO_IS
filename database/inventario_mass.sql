@@ -4,7 +4,8 @@
 CREATE DATABASE IF NOT EXISTS inventario_mass;
 USE inventario_mass;
 
--- Limpieza de tablas (Orden estricto por llaves foráneas)
+-- Limpieza de tablas (Orden estricto debido a las Foreign Keys)
+DROP TABLE IF EXISTS reclamos;
 DROP TABLE IF EXISTS detalle_informe;
 DROP TABLE IF EXISTS informe_recepcion;
 DROP TABLE IF EXISTS guia_productos;
@@ -20,7 +21,7 @@ DROP TABLE IF EXISTS usuarios;
 -- 2. CREACIÓN DE TABLAS
 -- ========================================================
 
--- Tabla de Usuarios
+-- Tabla de Usuarios (Módulo Login)
 CREATE TABLE usuarios (
     id_usuario INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
@@ -41,7 +42,7 @@ CREATE TABLE productos (
     estado VARCHAR(20) DEFAULT 'Normal'
 ) ENGINE=InnoDB;
 
--- Tabla de Movimientos de Stock
+-- Tabla de Movimientos de Stock (Historial / Kardex)
 CREATE TABLE movimientos_stock (
     id_movimiento INT AUTO_INCREMENT PRIMARY KEY,
     id_producto INT NOT NULL,
@@ -86,6 +87,7 @@ CREATE TABLE solicitudes_compra (
     motivo_rechazo TEXT NULL
 ) ENGINE=InnoDB;
 
+-- Tabla de Detalles de la Solicitud
 CREATE TABLE detalle_solicitud (
     id_detalle INT AUTO_INCREMENT PRIMARY KEY,
     id_solicitud INT NOT NULL,
@@ -126,14 +128,27 @@ CREATE TABLE detalle_informe (
     FOREIGN KEY (id_producto) REFERENCES productos(id_producto) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- Tabla de Gestión de Reclamos (CU-05)
+CREATE TABLE reclamos (
+    id_reclamo INT AUTO_INCREMENT PRIMARY KEY,
+    id_informe INT NOT NULL,
+    descripcion_incidencia TEXT NOT NULL,
+    estado ENUM('Pendiente', 'En atención', 'Cerrado') DEFAULT 'Pendiente',
+    solucion_proveedor TEXT NULL,
+    fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_informe) REFERENCES informe_recepcion(id_informe) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 
 -- ========================================================
 -- 3. INSERCIÓN DE DATOS REALES (MOCK DATA)
 -- ========================================================
 
+-- Credenciales Administrativas de acceso
 INSERT INTO usuarios (nombre, usuario, contrasenia, rol) VALUES 
 ('Administrador Sistema', 'admin', 'admin123', 'Administrador');
 
+-- Catálogo representativo de Tiendas Mass Perú
 INSERT INTO productos (codigo, nombre, categoria, precio, stock, stock_minimo, estado) VALUES
 ('P001', 'Leche Gloria Evaporada Entera 400g', 'Lácteos', 4.20, 150, 50, 'Normal'),
 ('P002', 'Leche Gloria Evaporada Entera 170g', 'Lácteos', 2.50, 20, 30, 'Stock Bajo'),
@@ -148,6 +163,7 @@ INSERT INTO productos (codigo, nombre, categoria, precio, stock, stock_minimo, e
 ('P011', 'Detergente Bolívar Matic 800g', 'Limpieza', 9.50, 0, 30, 'Agotado'),
 ('P012', 'Inca Kola Descartable 3L', 'Bebidas', 11.50, 85, 25, 'Normal');
 
+-- Historial de movimientos iniciales del sistema
 INSERT INTO movimientos_stock (id_producto, tipo_movimiento, cantidad, fecha_hora, responsable, motivo) VALUES 
 (1, 'Entrada', 100, '2026-07-06 08:30:00', 'Operador Almacén', 'Guía G-1045 (Recepción)'),
 (2, 'Entrada', 50, '2026-07-06 08:35:00', 'Operador Almacén', 'Guía G-1045 (Recepción)'),
@@ -158,6 +174,7 @@ INSERT INTO movimientos_stock (id_producto, tipo_movimiento, cantidad, fecha_hor
 (12, 'Entrada', 150, '2026-07-04 09:45:00', 'Operador Almacén', 'Guía G-1042 (Arca Continental)'),
 (5, 'Ajuste', 1, '2026-07-03 16:20:00', 'Administrador (FV)', 'Mayonesa vencida retirada');
 
+-- Bandeja de Control de Compras (CU-10)
 INSERT INTO solicitudes_compra (codigo_solicitud, supervisor, justificacion, estado) VALUES
 ('REQ-1001', 'Supervisor Turno Mañana', 'Reposición urgente de lácteos por fin de semana largo', 'Pendiente'),
 ('REQ-1002', 'Supervisor Turno Tarde', 'Faltante de mayonesas en góndola principal', 'Pendiente'),
@@ -171,6 +188,7 @@ INSERT INTO detalle_solicitud (id_solicitud, id_producto, cantidad) VALUES
 (3, 8, 30),
 (3, 11, 40);
 
+-- Módulo de Recepciones (CU-08)
 INSERT INTO guia_productos (codigo_guia, proveedor, fecha_emision) VALUES
 ('G-1045', 'Gloria S.A.', '2026-07-06'),
 ('G-1046', 'Alicorp S.A.A.', '2026-07-07'),
@@ -196,4 +214,9 @@ INSERT INTO detalle_informe (id_informe, id_producto, cantidad_recibida, estado_
 (4, 12, 80, 'Buen estado'), 
 (4, 12, 5, 'Dañado'),
 (5, 10, 40, 'Buen estado'), 
-(5, 11, 20, 'Faltante');    
+(5, 11, 20, 'Faltante');
+
+-- Módulo de Gestión de Reclamos (CU-05)
+INSERT INTO reclamos (id_informe, descripcion_incidencia, estado, solucion_proveedor) VALUES
+(2, 'Botellas de Inca Kola reventadas y faltante de mayonesa', 'Pendiente', NULL),
+(5, 'Faltaron bolsas de detergente según guía', 'En atención', 'Proveedor se compromete a enviar faltante mañana');

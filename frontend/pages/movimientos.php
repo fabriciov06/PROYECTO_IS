@@ -83,9 +83,14 @@ session_start();
                 <h1>Historial de Movimientos</h1>
                 <p style="color: #6B7280; font-size: 14px; margin-top: 5px; margin-bottom: 0;">Consulta las entradas, salidas y ajustes del inventario.</p>
             </div>
-            <div class="user-profile">
+            <div class="user-profile" style="position: relative; cursor: pointer;" onclick="let menu = document.getElementById('dropdown'); menu.style.display = menu.style.display === 'none' ? 'block' : 'none';">
                 <span>Administrador</span>
                 <div class="avatar">FV</div>
+                <div id="dropdown" style="display: none; position: absolute; top: 55px; right: 0; background: white; border: 1px solid #E5E7EB; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); width: 160px; z-index: 1000; overflow: hidden;">
+                    <a href="../../backend/cerrar_sesion.php" style="color: #DC2626; padding: 12px 15px; display: flex; align-items: center; text-decoration: none; font-size: 14px; font-weight: 600; transition: 0.2s;" onmouseover="this.style.background='#FEE2E2'" onmouseout="this.style.background='white'">
+                        <i class="fa-solid fa-right-from-bracket" style="margin-right: 10px;"></i> Cerrar Sesión
+                    </a>
+                </div>
             </div>
         </div>
 

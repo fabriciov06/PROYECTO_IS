@@ -14,7 +14,7 @@ $resultado = $stmt->get_result();
 if ($resultado->num_rows > 0) {
     $fila = $resultado->fetch_assoc();
     $_SESSION['usuario_logeado'] = $fila['nombre'];
-    header("Location: ../frontend/pages/productos.php");
+    header("Location: ../frontend/pages/dashboard.php");
     exit();
 } else {
     header("Location: ../frontend/pages/login.php?error=1");
