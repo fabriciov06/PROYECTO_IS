@@ -90,7 +90,7 @@ session_start();
                 <span>Administrador</span>
                 <div class="avatar">FV</div>
                 <div id="dropdown" style="display: none; position: absolute; top: 55px; right: 0; background: white; border: 1px solid #E5E7EB; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); width: 160px; z-index: 1000; overflow: hidden;">
-                    <a href="../../backend/cerrar_sesion.php" style="color: #DC2626; padding: 12px 15px; display: flex; align-items: center; text-decoration: none; font-size: 14px; font-weight: 600; transition: 0.2s;" onmouseover="this.style.background='#FEE2E2'" onmouseout="this.style.background='white'">
+                    <a href="../../backend/acciones/cerrar_sesion.php" style="color: #DC2626; padding: 12px 15px; display: flex; align-items: center; text-decoration: none; font-size: 14px; font-weight: 600; transition: 0.2s;" onmouseover="this.style.background='#FEE2E2'" onmouseout="this.style.background='white'">
                         <i class="fa-solid fa-right-from-bracket" style="margin-right: 10px;"></i> Cerrar Sesión
                     </a>
                 </div>
@@ -110,14 +110,13 @@ session_start();
                 </thead>
                 <tbody>
                     <?php
-                    require_once '../../backend/conexion.php';
-                    $sql = "SELECT r.*, i.codigo_informe FROM reclamos r 
-                            JOIN informe_recepcion i ON r.id_informe = i.id_informe 
-                            ORDER BY r.id_reclamo DESC";
-                    $resultado = $conexion->query($sql);
+                    require_once '../../backend/acciones/conexion.php';
+                    require_once '../../backend/clases/autoload.php';
                     
-                    if ($resultado && $resultado->num_rows > 0) {
-                        while($fila = $resultado->fetch_assoc()) {
+                    $reclamos = Reclamo::listar($conexion);
+                    
+                    if (!empty($reclamos)) {
+                        foreach ($reclamos as $fila) {
                             
                             $clase_badge = "badge-pendiente";
                             if($fila['estado'] == 'En atención') $clase_badge = "badge-atencion";
@@ -212,7 +211,7 @@ session_start();
             formData.append('solucion', solucion);
             formData.append('estado', estado);
 
-            fetch('../../backend/procesar_reclamo.php', {
+            fetch('../../backend/acciones/procesar_reclamo.php', {
                 method: 'POST',
                 body: formData
             })

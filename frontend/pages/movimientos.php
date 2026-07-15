@@ -87,7 +87,7 @@ session_start();
                 <span>Administrador</span>
                 <div class="avatar">FV</div>
                 <div id="dropdown" style="display: none; position: absolute; top: 55px; right: 0; background: white; border: 1px solid #E5E7EB; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); width: 160px; z-index: 1000; overflow: hidden;">
-                    <a href="../../backend/cerrar_sesion.php" style="color: #DC2626; padding: 12px 15px; display: flex; align-items: center; text-decoration: none; font-size: 14px; font-weight: 600; transition: 0.2s;" onmouseover="this.style.background='#FEE2E2'" onmouseout="this.style.background='white'">
+                    <a href="../../backend/acciones/cerrar_sesion.php" style="color: #DC2626; padding: 12px 15px; display: flex; align-items: center; text-decoration: none; font-size: 14px; font-weight: 600; transition: 0.2s;" onmouseover="this.style.background='#FEE2E2'" onmouseout="this.style.background='white'">
                         <i class="fa-solid fa-right-from-bracket" style="margin-right: 10px;"></i> Cerrar Sesión
                     </a>
                 </div>
@@ -149,7 +149,7 @@ session_start();
             let q = document.getElementById('buscarProducto').value;
 
             // Llama al archivo PHP del backend enviando los filtros
-            fetch(`../../backend/filtrar_movimientos.php?inicio=${inicio}&fin=${fin}&tipo=${tipo}&q=${q}`)
+            fetch(`../../backend/acciones/filtrar_movimientos.php?inicio=${inicio}&fin=${fin}&tipo=${tipo}&q=${q}`)
                 .then(res => res.text())
                 .then(html => {
                     document.getElementById('tablaMovimientos').innerHTML = html;

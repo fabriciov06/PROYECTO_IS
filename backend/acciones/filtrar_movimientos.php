@@ -1,36 +1,16 @@
 <?php
 require_once 'conexion.php';
+require_once '../clases/autoload.php';
 
-$inicio = isset($_GET['inicio']) ? $_GET['inicio'] : '';
-$fin = isset($_GET['fin']) ? $_GET['fin'] : '';
-$tipo = isset($_GET['tipo']) ? $_GET['tipo'] : '';
-$q = isset($_GET['q']) ? $_GET['q'] : '';
+$inicio = $_GET['inicio'] ?? '';
+$fin = $_GET['fin'] ?? '';
+$tipo = $_GET['tipo'] ?? '';
+$q = $_GET['q'] ?? '';
 
-// Consulta SQL conectando movimientos_stock con productos
-$sql = "SELECT m.*, p.codigo, p.nombre 
-        FROM movimientos_stock m 
-        JOIN productos p ON m.id_producto = p.id_producto 
-        WHERE 1=1";
+$movimientos = Administrador::consultarHistorialMovimientos($conexion, $inicio, $fin, $tipo, $q);
 
-if ($inicio != '') {
-    $sql .= " AND DATE(m.fecha_hora) >= '$inicio'";
-}
-if ($fin != '') {
-    $sql .= " AND DATE(m.fecha_hora) <= '$fin'";
-}
-if ($tipo != '') {
-    $sql .= " AND m.tipo_movimiento = '$tipo'";
-}
-if ($q != '') {
-    $sql .= " AND (p.nombre LIKE '%$q%' OR p.codigo LIKE '%$q%')";
-}
-
-$sql .= " ORDER BY m.fecha_hora DESC";
-$resultado = $conexion->query($sql);
-
-if ($resultado && $resultado->num_rows > 0) {
-    while($fila = $resultado->fetch_assoc()) {
-        
+if (!empty($movimientos)) {
+    foreach ($movimientos as $fila) {
         $fecha = date("d/m/Y", strtotime($fila['fecha_hora']));
         $hora = date("h:i A", strtotime($fila['fecha_hora']));
         

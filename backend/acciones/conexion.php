@@ -2,7 +2,7 @@
 // Datos de configuración de XAMPP
 $servidor = "localhost";
 $usuario = "root";
-$clave = "sebastianVT2006@";
+$clave = "";
 $base_datos = "inventario_mass";
 
 // Intentamos conectar

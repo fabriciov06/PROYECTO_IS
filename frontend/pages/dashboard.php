@@ -1,31 +1,15 @@
 <?php
 session_start();
-require_once '../../backend/conexion.php';
+require_once '../../backend/acciones/conexion.php';
+require_once '../../backend/clases/autoload.php';
 
-// 1. OBTENER ESTADÍSTICAS PARA LAS TARJETAS (KPIs)
+// 1. OBTENER ESTADÍSTICAS PARA LAS TARJETAS (KPIs) USANDO CLASES POO
 $totales = [
-    'productos' => 0,
-    'alertas_stock' => 0,
-    'compras_pendientes' => 0,
-    'reclamos_activos' => 0
+    'productos' => Producto::contarTotal($conexion),
+    'alertas_stock' => Producto::contarStockBajo($conexion),
+    'compras_pendientes' => SolicitudCompra::contarPendientes($conexion),
+    'reclamos_activos' => Reclamo::contarActivos($conexion)
 ];
-
-// Total de productos en catálogo
-$res = $conexion->query("SELECT COUNT(*) as total FROM productos");
-if($res) $totales['productos'] = $res->fetch_assoc()['total'];
-
-// Productos con stock bajo o agotados
-$res = $conexion->query("SELECT COUNT(*) as total FROM productos WHERE stock <= stock_minimo");
-if($res) $totales['alertas_stock'] = $res->fetch_assoc()['total'];
-
-// Solicitudes de compra pendientes
-$res = $conexion->query("SELECT COUNT(*) as total FROM solicitudes_compra WHERE estado = 'Pendiente'");
-if($res) $totales['compras_pendientes'] = $res->fetch_assoc()['total'];
-
-// Reclamos que aún no están cerrados (Pendiente o En atención)
-$res = $conexion->query("SELECT COUNT(*) as total FROM reclamos WHERE estado != 'Cerrado'");
-if($res) $totales['reclamos_activos'] = $res->fetch_assoc()['total'];
-
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -109,7 +93,7 @@ if($res) $totales['reclamos_activos'] = $res->fetch_assoc()['total'];
                 <span>Administrador</span>
                 <div class="avatar">FV</div>
                 <div id="dropdown" style="display: none; position: absolute; top: 55px; right: 0; background: white; border: 1px solid #E5E7EB; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); width: 160px; z-index: 1000; overflow: hidden;">
-                    <a href="../../backend/cerrar_sesion.php" style="color: #DC2626; padding: 12px 15px; display: flex; align-items: center; text-decoration: none; font-size: 14px; font-weight: 600; transition: 0.2s;" onmouseover="this.style.background='#FEE2E2'" onmouseout="this.style.background='white'">
+                    <a href="../../backend/acciones/cerrar_sesion.php" style="color: #DC2626; padding: 12px 15px; display: flex; align-items: center; text-decoration: none; font-size: 14px; font-weight: 600; transition: 0.2s;" onmouseover="this.style.background='#FEE2E2'" onmouseout="this.style.background='white'">
                         <i class="fa-solid fa-right-from-bracket" style="margin-right: 10px;"></i> Cerrar Sesión
                     </a>
                 </div>
@@ -163,14 +147,11 @@ if($res) $totales['reclamos_activos'] = $res->fetch_assoc()['total'];
                             <th>Estado</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <?php
-                        // Consulta para traer solo los productos que están fallando en stock
-                        $sql = "SELECT codigo, nombre, stock, stock_minimo FROM productos WHERE stock <= stock_minimo ORDER BY stock ASC LIMIT 5";
-                        $resultado = $conexion->query($sql);
+                                            <?php
+                        $alertas_productos = Producto::obtenerStockBajo($conexion, 5);
                         
-                        if ($resultado && $resultado->num_rows > 0) {
-                            while($fila = $resultado->fetch_assoc()) {
+                        if (!empty($alertas_productos)) {
+                            foreach ($alertas_productos as $fila) {
                                 $badge = ($fila['stock'] == 0) ? "<span class='badge-danger'>Agotado</span>" : "<span class='badge-warning'>Stock Bajo</span>";
                                 echo "<tr>
                                         <td><strong>{$fila['codigo']}</strong></td>
@@ -178,7 +159,7 @@ if($res) $totales['reclamos_activos'] = $res->fetch_assoc()['total'];
                                         <td style='font-weight: 700; color: " . ($fila['stock']==0 ? '#9B1C1C' : '#92400E') . ";'>{$fila['stock']} und</td>
                                         <td style='color: #6B7280;'>{$fila['stock_minimo']}</td>
                                         <td>{$badge}</td>
-                                      </tr>";
+                                       </tr>";
                             }
                         } else {
                             echo "<tr><td colspan='5' style='text-align: center; padding: 30px; color: #6B7280;'>Todos los productos tienen stock saludable.</td></tr>";
@@ -194,15 +175,10 @@ if($res) $totales['reclamos_activos'] = $res->fetch_assoc()['total'];
                 </div>
                 <div style="padding: 0;">
                     <?php
-                    // Consulta para traer los últimos 4 movimientos rápidos
-                    $sql_mov = "SELECT m.tipo_movimiento, m.cantidad, m.fecha_hora, p.nombre 
-                                FROM movimientos_stock m 
-                                JOIN productos p ON m.id_producto = p.id_producto 
-                                ORDER BY m.fecha_hora DESC LIMIT 4";
-                    $res_mov = $conexion->query($sql_mov);
+                    $ultimos_movimientos = MovimientoInventario::obtenerUltimos($conexion, 4);
 
-                    if ($res_mov && $res_mov->num_rows > 0) {
-                        while($mov = $res_mov->fetch_assoc()) {
+                    if (!empty($ultimos_movimientos)) {
+                        foreach ($ultimos_movimientos as $mov) {
                             $hora = date("d/m - H:i", strtotime($mov['fecha_hora']));
                             $color = ($mov['tipo_movimiento'] == 'Entrada') ? '#059669' : '#DC2626';
                             $signo = ($mov['tipo_movimiento'] == 'Entrada') ? '+' : '-';

@@ -143,7 +143,7 @@
                 <i class="fa-solid fa-circle-exclamation" style="margin-right: 5px;"></i> Usuario o contraseña incorrectos.
             </div>
             
-            <form action="../../backend/validar_login.php" method="POST">
+            <form action="../../backend/acciones/validar_login.php" method="POST">
                 
                 <div class="input-group">
                     <i class="fa-solid fa-user"></i>
