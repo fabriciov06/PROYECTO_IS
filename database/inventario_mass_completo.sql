@@ -291,18 +291,18 @@ INSERT INTO categorias (nombre, descripcion) VALUES
 INSERT INTO catalogo (sede) VALUES ('Sede Trujillo Centro');
 
 INSERT INTO productos (codigo, nombre, categoria, precio, stock, stock_minimo, estado, id_categoria, id_catalogo) VALUES
-('P001', 'Leche Gloria Evaporada Entera 400g', 'Lácteos', 4.20, 150, 50, 'Normal', 1, 1),
-('P002', 'Leche Gloria Evaporada Entera 170g', 'Lácteos', 2.50, 20, 30, 'Stock Bajo', 1, 1),
-('P003', 'Mayonesa Alacena Doypack 500g', 'Abarrotes', 8.90, 60, 20, 'Normal', 2, 1),
-('P004', 'Mayonesa Alacena Doypack 100g', 'Abarrotes', 2.20, 140, 50, 'Normal', 2, 1),
-('P005', 'Mayonesa Laive Receta Casera 750g', 'Abarrotes', 12.50, 5, 15, 'Stock Bajo', 2, 1),
-('P006', 'Mayonesa Laive Receta Casera 500g', 'Abarrotes', 8.50, 0, 20, 'Agotado', 2, 1),
-('P007', 'Arroz Costeño Extra 5kg', 'Abarrotes', 23.50, 45, 15, 'Normal', 2, 1),
-('P008', 'Arroz Costeño Extra 1kg', 'Abarrotes', 4.80, 10, 15, 'Stock Bajo', 2, 1),
-('P009', 'Aceite Primor Premium 1L', 'Abarrotes', 9.50, 120, 40, 'Normal', 2, 1),
-('P010', 'Detergente Bolívar Matic 2.6kg', 'Limpieza', 28.90, 40, 15, 'Normal', 3, 1),
-('P011', 'Detergente Bolívar Matic 800g', 'Limpieza', 9.50, 0, 30, 'Agotado', 3, 1),
-('P012', 'Inca Kola Descartable 3L', 'Bebidas', 11.50, 85, 25, 'Normal', 4, 1);
+('P0000001', 'Leche Gloria Evaporada Entera 400g', 'Lácteos', 4.20, 150, 50, 'Normal', 1, 1),
+('P0000002', 'Leche Gloria Evaporada Entera 170g', 'Lácteos', 2.50, 20, 30, 'Stock Bajo', 1, 1),
+('P0000003', 'Mayonesa Alacena Doypack 500g', 'Abarrotes', 8.90, 60, 20, 'Normal', 2, 1),
+('P0000004', 'Mayonesa Alacena Doypack 100g', 'Abarrotes', 2.20, 140, 50, 'Normal', 2, 1),
+('P0000005', 'Mayonesa Laive Receta Casera 750g', 'Abarrotes', 12.50, 5, 15, 'Stock Bajo', 2, 1),
+('P0000006', 'Mayonesa Laive Receta Casera 500g', 'Abarrotes', 8.50, 0, 20, 'Agotado', 2, 1),
+('P0000007', 'Arroz Costeño Extra 5kg', 'Abarrotes', 23.50, 45, 15, 'Normal', 2, 1),
+('P0000008', 'Arroz Costeño Extra 1kg', 'Abarrotes', 4.80, 10, 15, 'Stock Bajo', 2, 1),
+('P0000009', 'Aceite Primor Premium 1L', 'Abarrotes', 9.50, 120, 40, 'Normal', 2, 1),
+('P0000010', 'Detergente Bolívar Matic 2.6kg', 'Limpieza', 28.90, 40, 15, 'Normal', 3, 1),
+('P0000011', 'Detergente Bolívar Matic 800g', 'Limpieza', 9.50, 0, 30, 'Agotado', 3, 1),
+('P0000012', 'Inca Kola Descartable 3L', 'Bebidas', 11.50, 85, 25, 'Normal', 4, 1);
 
 INSERT INTO inventario (sede, usuario_responsable, motivo) VALUES 
 ('Sede Trujillo Centro', 'Administrador Sistema', 'Inventario general mensual');

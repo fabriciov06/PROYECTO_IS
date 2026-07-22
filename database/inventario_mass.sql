@@ -162,18 +162,18 @@ INSERT INTO usuarios (nombre, usuario, contrasenia, rol) VALUES
 
 -- Catálogo representativo de Tiendas Mass Perú
 INSERT INTO productos (codigo, nombre, categoria, precio, stock, stock_minimo, estado) VALUES
-('P001', 'Leche Gloria Evaporada Entera 400g', 'Lácteos', 4.20, 150, 50, 'Normal'),
-('P002', 'Leche Gloria Evaporada Entera 170g', 'Lácteos', 2.50, 20, 30, 'Stock Bajo'),
-('P003', 'Mayonesa Alacena Doypack 500g', 'Abarrotes', 8.90, 60, 20, 'Normal'),
-('P004', 'Mayonesa Alacena Doypack 100g', 'Abarrotes', 2.20, 140, 50, 'Normal'),
-('P005', 'Mayonesa Laive Receta Casera 750g', 'Abarrotes', 12.50, 5, 15, 'Stock Bajo'),
-('P006', 'Mayonesa Laive Receta Casera 500g', 'Abarrotes', 8.50, 0, 20, 'Agotado'),
-('P007', 'Arroz Costeño Extra 5kg', 'Abarrotes', 23.50, 45, 15, 'Normal'),
-('P008', 'Arroz Costeño Extra 1kg', 'Abarrotes', 4.80, 10, 15, 'Stock Bajo'),
-('P009', 'Aceite Primor Premium 1L', 'Abarrotes', 9.50, 120, 40, 'Normal'),
-('P010', 'Detergente Bolívar Matic 2.6kg', 'Limpieza', 28.90, 40, 15, 'Normal'),
-('P011', 'Detergente Bolívar Matic 800g', 'Limpieza', 9.50, 0, 30, 'Agotado'),
-('P012', 'Inca Kola Descartable 3L', 'Bebidas', 11.50, 85, 25, 'Normal');
+('P0000001', 'Leche Gloria Evaporada Entera 400g', 'Lácteos', 4.20, 150, 50, 'Normal'),
+('P0000002', 'Leche Gloria Evaporada Entera 170g', 'Lácteos', 2.50, 20, 30, 'Stock Bajo'),
+('P0000003', 'Mayonesa Alacena Doypack 500g', 'Abarrotes', 8.90, 60, 20, 'Normal'),
+('P0000004', 'Mayonesa Alacena Doypack 100g', 'Abarrotes', 2.20, 140, 50, 'Normal'),
+('P0000005', 'Mayonesa Laive Receta Casera 750g', 'Abarrotes', 12.50, 5, 15, 'Stock Bajo'),
+('P0000006', 'Mayonesa Laive Receta Casera 500g', 'Abarrotes', 8.50, 0, 20, 'Agotado'),
+('P0000007', 'Arroz Costeño Extra 5kg', 'Abarrotes', 23.50, 45, 15, 'Normal'),
+('P0000008', 'Arroz Costeño Extra 1kg', 'Abarrotes', 4.80, 10, 15, 'Stock Bajo'),
+('P0000009', 'Aceite Primor Premium 1L', 'Abarrotes', 9.50, 120, 40, 'Normal'),
+('P0000010', 'Detergente Bolívar Matic 2.6kg', 'Limpieza', 28.90, 40, 15, 'Normal'),
+('P0000011', 'Detergente Bolívar Matic 800g', 'Limpieza', 9.50, 0, 30, 'Agotado'),
+('P0000012', 'Inca Kola Descartable 3L', 'Bebidas', 11.50, 85, 25, 'Normal');
 
 -- Historial de movimientos iniciales del sistema
 INSERT INTO movimientos_stock (id_producto, tipo_movimiento, cantidad, fecha_hora, responsable, motivo) VALUES 

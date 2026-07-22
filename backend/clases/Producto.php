@@ -72,13 +72,13 @@ class Producto {
         }
         
         do {
-            $codigoSugerido = 'P' . str_pad($nextId, 3, '0', STR_PAD_LEFT);
+            $codigoSugerido = 'P' . str_pad($nextId, 7, '0', STR_PAD_LEFT);
             $check = $conexion->query("SELECT id_producto FROM productos WHERE codigo = '$codigoSugerido'");
             if (!$check || $check->num_rows == 0) {
                 break;
             }
             $nextId++;
-        } while ($nextId < 99999);
+        } while ($nextId < 9999999);
 
         return $codigoSugerido;
     }
