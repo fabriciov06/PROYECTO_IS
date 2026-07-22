@@ -107,7 +107,7 @@ class Catalogo {
         } else {
             return [
                 'exito' => false,
-                'error' => 'No se pudo completar el registro. Intente nuevamente.'
+                'error' => 'No se pudo completar el registro: ' . ($conexion->error ?: 'Intente nuevamente.')
             ];
         }
     }
