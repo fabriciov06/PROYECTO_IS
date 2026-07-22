@@ -111,6 +111,8 @@ if (!isset($_SESSION['usuario_logeado'])) {
             <li class="disabled"><a href="javascript:void(0)" title="Módulo fuera del alcance actual"><i class="fa-solid fa-clipboard-check"></i> Control de Compras</a></li>
             <li class="disabled"><a href="javascript:void(0)" title="Módulo fuera del alcance actual"><i class="fa-solid fa-boxes-packing"></i> Recepciones</a></li>
             <li class="disabled"><a href="javascript:void(0)" title="Módulo fuera del alcance actual"><i class="fa-solid fa-triangle-exclamation"></i> Reclamos</a></li>
+            <li class="disabled"><a href="javascript:void(0)" title="Módulo fuera del alcance actual"><i class="fa-solid fa-users-gear"></i> Gestión de Cuentas</a></li>
+            <li class="disabled"><a href="javascript:void(0)" title="Módulo fuera del alcance actual"><i class="fa-solid fa-file-shield"></i> Auditoría de Sistema</a></li>
         </ul>
     </aside>
 
