@@ -186,7 +186,12 @@ if (!isset($_SESSION['usuario_logeado'])) {
                 <div class="form-grid">
                     <div class="form-group full-width">
                         <label>Código del Producto <span class="req">*</span></label>
-                        <input type="text" id="add_codigo" name="codigo" placeholder="Ej: P001" required autocomplete="off">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="text" id="add_codigo" name="codigo" placeholder="Ej: P001" required autocomplete="off" style="flex: 1;">
+                            <button type="button" id="btnGenerarCodigoAuto" class="btn-filter" style="padding: 10px 14px; font-size: 12px; white-space: nowrap;" title="Generar código sugerido automáticamente">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Auto
+                            </button>
+                        </div>
                         <span id="indicatorCodigo" class="status-indicator"></span>
                     </div>
 
@@ -397,6 +402,18 @@ if (!isset($_SESSION['usuario_logeado'])) {
             setTimeout(() => toast.classList.remove("show"), 3500);
         }
 
+        // Generar código automático sugerido
+        function solicitarCodigoSugerido() {
+            fetch('../../backend/acciones/generar_codigo.php')
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.codigo) {
+                        inputCodigo.value = data.codigo;
+                        evaluarCodigoEnTiempoReal(data.codigo);
+                    }
+                });
+        }
+
         // Abrir Modal Agregar (Paso 1-2, RNF-08)
         function abrirModalAgregar() {
             document.getElementById("formAgregarProducto").reset();
@@ -408,6 +425,9 @@ if (!isset($_SESSION['usuario_logeado'])) {
             codigoValido = false;
             esDesactivado = false;
             modalAgregar.style.display = "flex";
+
+            // Autogenerar código sugerido al abrir (e.g. P013)
+            solicitarCodigoSugerido();
             setTimeout(() => inputCodigo.focus(), 100);
         }
 
@@ -418,6 +438,7 @@ if (!isset($_SESSION['usuario_logeado'])) {
         document.getElementById("btnAbrirModal").onclick = abrirModalAgregar;
         document.getElementById("btnCerrarAgregar").onclick = cerrarModalAgregar;
         document.getElementById("btnCerrarBusqueda").onclick = () => modalBusq.style.display = "none";
+        document.getElementById("btnGenerarCodigoAuto").onclick = solicitarCodigoSugerido;
 
         // Atajos de teclado (Alt+N y Alt+G)
         document.addEventListener("keydown", function(e) {
@@ -435,20 +456,19 @@ if (!isset($_SESSION['usuario_logeado'])) {
 
         // Verificación en tiempo real de Código (Pasos 3-4, Flujos 4.1, 4.2, 4.3)
         let timerVerificacion;
-        inputCodigo.addEventListener("input", function() {
+        function evaluarCodigoEnTiempoReal(val) {
             clearTimeout(timerVerificacion);
-            const val = this.value.trim();
             alertError.style.display = "none";
 
-            if (val === "") {
-                indicatorCodigo.innerText = "";
-                indicatorCodigo.className = "status-indicator";
+            if (!val || val.trim() === "") {
+                indicatorCodigo.innerText = "✕ El código del producto es obligatorio.";
+                indicatorCodigo.className = "status-indicator status-invalid";
                 codigoValido = false;
                 return;
             }
 
             timerVerificacion = setTimeout(() => {
-                fetch(`../../backend/acciones/verificar_codigo.php?codigo=${encodeURIComponent(val)}`)
+                fetch(`../../backend/acciones/verificar_codigo.php?codigo=${encodeURIComponent(val.trim())}`)
                     .then(res => res.json())
                     .then(data => {
                         if (data.estado === 'disponible') {
@@ -471,12 +491,16 @@ if (!isset($_SESSION['usuario_logeado'])) {
                             indicatorCodigo.className = 'status-indicator status-deactivated';
                             codigoValido = false;
                             esDesactivado = true;
-                            document.getElementById('reactivar_codigo').value = val;
+                            document.getElementById('reactivar_codigo').value = val.trim();
                             document.getElementById('msgReactivar').innerText = data.mensaje;
                             document.getElementById('modalReactivar').style.display = 'flex';
                         }
                     });
-            }, 300);
+            }, 250);
+        }
+
+        inputCodigo.addEventListener("input", function() {
+            evaluarCodigoEnTiempoReal(this.value);
         });
 
         // Reactivación de producto previamente desactivado (Flujo 4.3)
@@ -499,33 +523,76 @@ if (!isset($_SESSION['usuario_logeado'])) {
                 });
         };
 
-        // Pre-guardar: Validación y solicitud de confirmación (Pasos 5-8, RNF-04, RNF-03, Flujos 6.1, 6.2)
+        // Pre-guardar: Validación detallada campo por campo (Pasos 5-8, RNF-04, RNF-03, Flujos 6.1, 6.2)
         document.getElementById("btnPreGuardar").onclick = function() {
             alertError.style.display = "none";
             const cod = inputCodigo.value.trim();
             const nom = document.getElementById("add_nombre").value.trim();
             const cat = document.getElementById("add_categoria").value;
-            const prec = parseFloat(document.getElementById("add_precio").value);
-            const stock = parseInt(document.getElementById("add_stock").value);
-            const stockMin = parseInt(document.getElementById("add_stock_minimo").value);
+            const unidad = document.getElementById("add_unidad_medida").value;
+            const precVal = document.getElementById("add_precio").value;
+            const stockVal = document.getElementById("add_stock").value;
+            const stockMinVal = document.getElementById("add_stock_minimo").value;
 
-            // RNF-04: Campos requeridos vacíos
-            if (!cod || !nom || !cat || isNaN(prec)) {
-                alertError.innerText = "Por favor, complete los campos obligatorios (*) antes de continuar.";
+            // 1. Código
+            if (!cod) {
+                alertError.innerText = "El código del producto es obligatorio.";
                 alertError.style.display = "block";
+                inputCodigo.focus();
                 return;
             }
-
-            // Flujo 6.2: Numérico negativo o inválido
-            if (prec <= 0 || stock < 0 || stockMin < 0) {
-                alertError.innerText = "El valor ingresado no es válido para este campo.";
-                alertError.style.display = "block";
-                return;
-            }
-
             if (!codigoValido) {
-                alertError.innerText = indicatorCodigo.innerText || "Verifique el código del producto.";
+                alertError.innerText = indicatorCodigo.innerText.replace('✕ ', '').replace('⚠ ', '') || "Verifique el código del producto.";
                 alertError.style.display = "block";
+                inputCodigo.focus();
+                return;
+            }
+
+            // 2. Nombre
+            if (!nom || nom.length < 3) {
+                alertError.innerText = "El nombre del producto debe tener al menos 3 caracteres.";
+                alertError.style.display = "block";
+                document.getElementById("add_nombre").focus();
+                return;
+            }
+
+            // 3. Categoría
+            if (!cat) {
+                alertError.innerText = "Debe seleccionar una categoría obligatoria para el producto.";
+                alertError.style.display = "block";
+                document.getElementById("add_categoria").focus();
+                return;
+            }
+
+            // 4. Unidad de Medida
+            if (!unidad) {
+                alertError.innerText = "Debe seleccionar una unidad de medida para el producto.";
+                alertError.style.display = "block";
+                document.getElementById("add_unidad_medida").focus();
+                return;
+            }
+
+            // 5. Precio
+            if (precVal === "" || isNaN(parseFloat(precVal)) || parseFloat(precVal) <= 0) {
+                alertError.innerText = "El precio unitario debe ser un valor numérico mayor a S/ 0.00.";
+                alertError.style.display = "block";
+                document.getElementById("add_precio").focus();
+                return;
+            }
+
+            // 6. Stock Inicial
+            if (stockVal === "" || isNaN(parseInt(stockVal)) || parseInt(stockVal) < 0) {
+                alertError.innerText = "El stock inicial no puede ser un valor negativo.";
+                alertError.style.display = "block";
+                document.getElementById("add_stock").focus();
+                return;
+            }
+
+            // 7. Stock Mínimo
+            if (stockMinVal === "" || isNaN(parseInt(stockMinVal)) || parseInt(stockMinVal) < 0) {
+                alertError.innerText = "El stock mínimo no puede ser un valor negativo.";
+                alertError.style.display = "block";
+                document.getElementById("add_stock_minimo").focus();
                 return;
             }
 

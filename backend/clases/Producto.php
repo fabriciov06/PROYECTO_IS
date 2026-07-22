@@ -64,6 +64,25 @@ class Producto {
         ];
     }
 
+    public static function generarSiguienteCodigo(mysqli $conexion): string {
+        $res = $conexion->query("SELECT MAX(id_producto) as max_id FROM productos");
+        $nextId = 1;
+        if ($res && $row = $res->fetch_assoc()) {
+            $nextId = ((int)$row['max_id']) + 1;
+        }
+        
+        do {
+            $codigoSugerido = 'P' . str_pad($nextId, 3, '0', STR_PAD_LEFT);
+            $check = $conexion->query("SELECT id_producto FROM productos WHERE codigo = '$codigoSugerido'");
+            if (!$check || $check->num_rows == 0) {
+                break;
+            }
+            $nextId++;
+        } while ($nextId < 99999);
+
+        return $codigoSugerido;
+    }
+
     public static function reactivar(mysqli $conexion, string $codigo, string $usuario = 'Administrador'): bool {
         $codigoEsc = $conexion->real_escape_string(trim($codigo));
         $res = $conexion->query("SELECT id_producto, nombre FROM productos WHERE codigo = '$codigoEsc'");

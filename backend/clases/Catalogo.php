@@ -34,11 +34,37 @@ class Catalogo {
         $descripcionEscaped = $conexion->real_escape_string(htmlspecialchars(trim($descripcion)));
         $estado = 'Activo';
 
-        // Validaciones numéricas (Flujo 6.2)
-        if ($precio <= 0 || $stockInicial < 0 || $stockMinimo < 0) {
+        // Validaciones de selección obligatoria (RNF-04)
+        if (empty($codigoEscaped)) {
+            return ['exito' => false, 'error' => 'El código del producto es obligatorio.'];
+        }
+        if (empty($nombreEscaped) || mb_strlen($nombreEscaped) < 3) {
+            return ['exito' => false, 'error' => 'El nombre del producto debe tener al menos 3 caracteres.'];
+        }
+        if (empty($categoriaEscaped)) {
+            return ['exito' => false, 'error' => 'Debe seleccionar una categoría obligatoria para el producto.'];
+        }
+        if (empty($unidadMedidaEscaped)) {
+            return ['exito' => false, 'error' => 'Debe seleccionar una unidad de medida para el producto.'];
+        }
+
+        // Validaciones numéricas estrictas (Flujo 6.2)
+        if ($precio <= 0) {
             return [
                 'exito' => false,
-                'error' => 'El valor ingresado no es válido para este campo.'
+                'error' => 'El precio unitario debe ser un valor numérico mayor a S/ 0.00.'
+            ];
+        }
+        if ($stockInicial < 0) {
+            return [
+                'exito' => false,
+                'error' => 'El stock inicial no puede ser un valor negativo.'
+            ];
+        }
+        if ($stockMinimo < 0) {
+            return [
+                'exito' => false,
+                'error' => 'El stock mínimo no puede ser un valor negativo.'
             ];
         }
 
