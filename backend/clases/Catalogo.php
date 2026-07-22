@@ -121,22 +121,19 @@ class Catalogo {
         int $stock,
         int $stockMinimo = 0,
         string $unidadMedida = 'unidad',
+        string $descripcion = '',
         string $usuario = 'Administrador'
     ): bool {
-        $nombreEscaped = $conexion->real_escape_string(htmlspecialchars(trim($nombre)));
-        $categoriaEscaped = $conexion->real_escape_string(htmlspecialchars(trim($categoria)));
-        $unidadMedidaEscaped = $conexion->real_escape_string(htmlspecialchars(trim($unidadMedida)));
-
-        $sql = "UPDATE productos SET nombre='$nombreEscaped', categoria='$categoriaEscaped', precio=$precio, stock=$stock, stock_minimo=$stockMinimo, unidad_medida='$unidadMedidaEscaped' WHERE id_producto = $id";
-        
-        if ($conexion->query($sql) === TRUE) {
+        $exito = Producto::modificarProducto($conexion, $id, $nombre, $categoria, $unidadMedida, $precio, $stock, $stockMinimo, $descripcion);
+        if ($exito) {
+            $nombreEsc = $conexion->real_escape_string(htmlspecialchars(trim($nombre), ENT_QUOTES));
             Auditoria::registrar(
                 $conexion,
                 $usuario,
                 TipoOperacion::MODIFICAR,
                 'Producto',
                 $id,
-                "Modificación de datos de producto ID: $id ($nombreEscaped)"
+                "Modificación de producto ID: $id ($nombreEsc)"
             );
             return true;
         }

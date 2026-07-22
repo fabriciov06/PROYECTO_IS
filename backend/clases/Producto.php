@@ -161,5 +161,44 @@ class Producto {
     public function actualizarEstado(bool $nuevoEstado): void {
         $this->estado = $nuevoEstado;
     }
+
+    public static function obtenerPorId(mysqli $conexion, int $id): ?array {
+        $id = intval($id);
+        $res = $conexion->query("SELECT * FROM productos WHERE id_producto = $id");
+        if ($res && $res->num_rows > 0) {
+            return $res->fetch_assoc();
+        }
+        return null;
+    }
+
+    public static function modificarProducto(
+        mysqli $conexion,
+        int $id,
+        string $nombre,
+        string $categoria,
+        string $unidadMedida,
+        float $precio,
+        int $stock,
+        int $stockMinimo,
+        string $descripcion = ''
+    ): bool {
+        $id = intval($id);
+        $nombreEscaped = $conexion->real_escape_string(htmlspecialchars(trim($nombre), ENT_QUOTES));
+        $categoriaEscaped = $conexion->real_escape_string(htmlspecialchars(trim($categoria), ENT_QUOTES));
+        $unidadMedidaEscaped = $conexion->real_escape_string(htmlspecialchars(trim($unidadMedida), ENT_QUOTES));
+        $descripcionEscaped = $conexion->real_escape_string(htmlspecialchars(trim($descripcion), ENT_QUOTES));
+
+        $sql = "UPDATE productos SET 
+                    nombre = '$nombreEscaped', 
+                    categoria = '$categoriaEscaped', 
+                    unidad_medida = '$unidadMedidaEscaped', 
+                    precio = $precio, 
+                    stock = $stock, 
+                    stock_minimo = $stockMinimo, 
+                    descripcion = '$descripcionEscaped'
+                WHERE id_producto = $id";
+
+        return $conexion->query($sql) === TRUE;
+    }
 }
 ?>

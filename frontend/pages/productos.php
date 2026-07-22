@@ -280,21 +280,24 @@ if (!isset($_SESSION['usuario_logeado'])) {
         </div>
     </div>
 
-    <!-- MODAL EDITAR PRODUCTO -->
+    <!-- MODAL EDITAR PRODUCTO (i_ModificarProducto) -->
     <div id="modalEditarProducto" class="modal">
         <div class="modal-content">
-            <span class="close-btn" onclick="document.getElementById('modalEditarProducto').style.display='none'">&times;</span>
+            <span class="close-btn" id="btnCerrarEditar" onclick="cerrarModalEditar()">&times;</span>
             <h2><i class="fa-solid fa-pen-to-square" style="color: #0F1B2D; margin-right: 8px;"></i> Modificar Producto</h2>
+            
+            <div id="alertErrorEditar" style="display: none; background: #FEE2E2; color: #991B1B; padding: 12px 15px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 15px; border: 1px solid #FCA5A5;"></div>
+
             <form id="formEditarProducto">
                 <input type="hidden" id="edit_id" name="id">
                 <div class="form-grid">
                     <div class="form-group full-width">
                         <label>Código del Producto</label>
-                        <input type="text" id="edit_codigo" disabled style="background: #E5E7EB; cursor: not-allowed;">
+                        <input type="text" id="edit_codigo" disabled style="background: #E5E7EB; cursor: not-allowed; font-weight: 700;">
                     </div>
                     <div class="form-group full-width">
                         <label>Nombre del Producto <span class="req">*</span></label>
-                        <input type="text" id="edit_nombre" name="nombre" required>
+                        <input type="text" id="edit_nombre" name="nombre" placeholder="Ej: Leche Gloria Evaporada 400g" required>
                     </div>
                     <div class="form-group">
                         <label>Categoría <span class="req">*</span></label>
@@ -314,22 +317,41 @@ if (!isset($_SESSION['usuario_logeado'])) {
                     </div>
                     <div class="form-group">
                         <label>Precio Unitario (S/) <span class="req">*</span></label>
-                        <input type="number" id="edit_precio" name="precio" step="0.01" min="0.01" required>
+                        <input type="number" id="edit_precio" name="precio" step="0.01" min="0.01" placeholder="0.00" required oninput="if(this.value < 0) this.value = ''">
                     </div>
                     <div class="form-group">
                         <label>Stock Actual <span class="req">*</span></label>
-                        <input type="number" id="edit_stock" name="stock" min="0" required>
+                        <input type="number" id="edit_stock" name="stock" min="0" required oninput="if(this.value < 0) this.value = 0">
                     </div>
                     <div class="form-group full-width">
                         <label>Stock Mínimo <span class="req">*</span></label>
-                        <input type="number" id="edit_stock_minimo" name="stock_minimo" min="0" required>
+                        <input type="number" id="edit_stock_minimo" name="stock_minimo" min="0" required oninput="if(this.value < 0) this.value = 0">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Descripción Adicional</label>
+                        <textarea id="edit_descripcion" name="descripcion" rows="2" placeholder="Detalles o especificaciones opcionales del producto..."></textarea>
                     </div>
                 </div>
                 <div style="display: flex; gap: 12px; margin-top: 15px;">
-                    <button type="button" class="btn-cancel" style="flex: 1;" onclick="document.getElementById('modalEditarProducto').style.display='none'">Cancelar</button>
-                    <button type="submit" class="btn-save" style="flex: 1;"><i class="fa-solid fa-floppy-disk"></i> Guardar Cambios</button>
+                    <button type="button" class="btn-cancel" style="flex: 1;" onclick="cerrarModalEditar()">Cancelar</button>
+                    <button type="button" id="btnPreGuardarEditar" class="btn-save" style="flex: 1;" title="Atajo: Alt + G">
+                        <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios (Alt+G)
+                    </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIRMACIÓN DE MODIFICACIÓN (RNF-03 / Flujo 7.1) -->
+    <div id="modalConfirmacionEditar" class="modal">
+        <div class="modal-content" style="max-width: 420px; text-align: center;">
+            <div style="font-size: 48px; color: #FFD100; margin-bottom: 15px;"><i class="fa-solid fa-circle-question"></i></div>
+            <h2>Confirmar Modificación</h2>
+            <p style="color: #4B5563; font-size: 14px; margin-bottom: 25px;">¿Está seguro de guardar los cambios realizados en este producto?</p>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" class="btn-cancel" style="flex: 1;" onclick="cerrarModalConfirmacionEditar()">Cancelar</button>
+                <button type="button" id="btnEjecutarActualizar" class="btn-save" style="flex: 1;">Sí, Actualizar</button>
+            </div>
         </div>
     </div>
 
@@ -371,32 +393,64 @@ if (!isset($_SESSION['usuario_logeado'])) {
 
     <script>
         const modalAgregar = document.getElementById("modalAgregarProducto");
+        const modalEditar = document.getElementById("modalEditarProducto");
+        const modalConfirmacionEditar = document.getElementById("modalConfirmacionEditar");
         const modalBusq = document.getElementById("modalBusqueda");
         const inputCodigo = document.getElementById("add_codigo");
         const indicatorCodigo = document.getElementById("indicatorCodigo");
         const alertError = document.getElementById("alertErrorAgregar");
+        const alertErrorEditar = document.getElementById("alertErrorEditar");
         
         let codigoValido = false;
         let esDesactivado = false;
+        let selectedRow = null;
+        let initialEditState = {};
+
+        // Seleccionar Fila de la Tabla
+        function seleccionarFila(tr) {
+            if (selectedRow) {
+                selectedRow.classList.remove('selected-row');
+            }
+            selectedRow = tr;
+            if (tr) {
+                tr.classList.add('selected-row');
+            }
+        }
 
         // Cargar Categorías Dinámicamente (c_ValidarProducto / e_Categoria)
         function cargarCategorias() {
-            fetch('../../backend/acciones/obtener_categorias.php')
+            return fetch('../../backend/acciones/obtener_categorias.php')
                 .then(res => res.json())
                 .then(cats => {
                     let options = '<option value="">Seleccione categoría...</option>';
                     let filterOptions = '<option value="">Todas las categorías</option>';
-                    cats.forEach(c => {
-                        options += `<option value="${c}">${c}</option>`;
-                        filterOptions += `<option value="${c}">${c}</option>`;
-                    });
+                    if (Array.isArray(cats) && cats.length > 0) {
+                        cats.forEach(c => {
+                            options += `<option value="${c}">${c}</option>`;
+                            filterOptions += `<option value="${c}">${c}</option>`;
+                        });
+                    } else {
+                        const defaultCats = ['Abarrotes', 'Bebidas', 'Cuidado Personal', 'Embutidos', 'Lácteos', 'Limpieza', 'Panadería', 'Snacks'];
+                        defaultCats.forEach(c => {
+                            options += `<option value="${c}">${c}</option>`;
+                            filterOptions += `<option value="${c}">${c}</option>`;
+                        });
+                    }
                     document.getElementById('add_categoria').innerHTML = options;
                     document.getElementById('edit_categoria').innerHTML = options;
                     document.getElementById('categoriaBusqueda').innerHTML = filterOptions;
+                })
+                .catch(err => {
+                    console.error('Error cargando categorías:', err);
+                    const defaultCats = ['Abarrotes', 'Bebidas', 'Cuidado Personal', 'Embutidos', 'Lácteos', 'Limpieza', 'Panadería', 'Snacks'];
+                    let options = '<option value="">Seleccione categoría...</option>';
+                    defaultCats.forEach(c => { options += `<option value="${c}">${c}</option>`; });
+                    document.getElementById('add_categoria').innerHTML = options;
+                    document.getElementById('edit_categoria').innerHTML = options;
                 });
         }
 
-        // Mostrar Toast Notification
+        // Mostrar Toast Notification (RNF-12)
         function mostrarToast(msg) {
             const toast = document.getElementById("toastNotification");
             document.getElementById("toastMessage").innerText = msg;
@@ -428,7 +482,6 @@ if (!isset($_SESSION['usuario_logeado'])) {
             esDesactivado = false;
             modalAgregar.style.display = "flex";
 
-            // Autogenerar código sugerido al abrir (e.g. P013)
             solicitarCodigoSugerido();
             setTimeout(() => inputCodigo.focus(), 100);
         }
@@ -437,26 +490,60 @@ if (!isset($_SESSION['usuario_logeado'])) {
             modalAgregar.style.display = "none";
         }
 
+        function cerrarModalEditar() {
+            if (modalEditar) modalEditar.style.display = "none";
+            limpiarErroresEditar();
+        }
+
+        function cerrarModalConfirmacionEditar() {
+            if (modalConfirmacionEditar) modalConfirmacionEditar.style.display = "none";
+            // RNF-23: Conserva datos en el formulario de modificación si cancela la confirmación
+        }
+
         document.getElementById("btnAbrirModal").onclick = abrirModalAgregar;
         document.getElementById("btnCerrarAgregar").onclick = cerrarModalAgregar;
         document.getElementById("btnCerrarBusqueda").onclick = () => modalBusq.style.display = "none";
         document.getElementById("btnGenerarCodigoAuto").onclick = solicitarCodigoSugerido;
 
-        // Atajos de teclado (Alt+N y Alt+G)
+        // Atajos de teclado (Alt+N, Alt+G, Alt+B, Escape) - RNF-02 / UX
         document.addEventListener("keydown", function(e) {
+            // Tecla Escape: cierra el modal de modificación o confirmación automáticamente
+            if (e.key === "Escape") {
+                if (modalConfirmacionEditar && modalConfirmacionEditar.style.display === "flex") {
+                    cerrarModalConfirmacionEditar();
+                } else if (modalEditar && modalEditar.style.display === "flex") {
+                    cerrarModalEditar();
+                } else if (modalAgregar && modalAgregar.style.display === "flex") {
+                    cerrarModalAgregar();
+                } else if (modalBusq && modalBusq.style.display === "flex") {
+                    modalBusq.style.display = "none";
+                }
+            }
+
             if (e.altKey && (e.key === "n" || e.key === "N")) {
                 e.preventDefault();
                 abrirModalAgregar();
             }
             if (e.altKey && (e.key === "g" || e.key === "G")) {
                 e.preventDefault();
-                if (modalAgregar.style.display === "flex") {
+                if (modalAgregar && modalAgregar.style.display === "flex") {
                     document.getElementById("btnPreGuardar").click();
+                } else if (modalEditar && modalEditar.style.display === "flex") {
+                    const btnSaveEdit = document.getElementById("btnPreGuardarEditar");
+                    if (btnSaveEdit) btnSaveEdit.click();
+                }
+            }
+            if (e.altKey && (e.key === "b" || e.key === "B")) {
+                e.preventDefault();
+                const inputBuscar = document.getElementById("inputBuscar");
+                if (inputBuscar) {
+                    inputBuscar.focus();
+                    inputBuscar.select();
                 }
             }
         });
 
-        // Verificación en tiempo real de Código (Pasos 3-4, Flujos 4.1, 4.2, 4.3)
+        // Verificación en tiempo real de Código
         let timerVerificacion;
         function evaluarCodigoEnTiempoReal(val) {
             clearTimeout(timerVerificacion);
@@ -505,7 +592,7 @@ if (!isset($_SESSION['usuario_logeado'])) {
             evaluarCodigoEnTiempoReal(this.value);
         });
 
-        // Reactivación de producto previamente desactivado (Flujo 4.3)
+        // Reactivación de producto desactivado
         document.getElementById('btnEjecutarReactivar').onclick = function() {
             const cod = document.getElementById('reactivar_codigo').value;
             const formData = new FormData();
@@ -525,7 +612,7 @@ if (!isset($_SESSION['usuario_logeado'])) {
                 });
         };
 
-        // Pre-guardar: Validación detallada campo por campo (Pasos 5-8, RNF-04, RNF-03, Flujos 6.1, 6.2)
+        // Pre-guardar Agregar Producto
         document.getElementById("btnPreGuardar").onclick = function() {
             alertError.style.display = "none";
             const cod = inputCodigo.value.trim();
@@ -536,7 +623,6 @@ if (!isset($_SESSION['usuario_logeado'])) {
             const stockVal = document.getElementById("add_stock").value;
             const stockMinVal = document.getElementById("add_stock_minimo").value;
 
-            // 1. Código
             if (!cod) {
                 alertError.innerText = "El código del producto es obligatorio.";
                 alertError.style.display = "block";
@@ -549,48 +635,36 @@ if (!isset($_SESSION['usuario_logeado'])) {
                 inputCodigo.focus();
                 return;
             }
-
-            // 2. Nombre
             if (!nom || nom.length < 3) {
                 alertError.innerText = "El nombre del producto debe tener al menos 3 caracteres.";
                 alertError.style.display = "block";
                 document.getElementById("add_nombre").focus();
                 return;
             }
-
-            // 3. Categoría
             if (!cat) {
                 alertError.innerText = "Debe seleccionar una categoría obligatoria para el producto.";
                 alertError.style.display = "block";
                 document.getElementById("add_categoria").focus();
                 return;
             }
-
-            // 4. Unidad de Medida
             if (!unidad) {
                 alertError.innerText = "Debe seleccionar una unidad de medida para el producto.";
                 alertError.style.display = "block";
                 document.getElementById("add_unidad_medida").focus();
                 return;
             }
-
-            // 5. Precio
             if (precVal === "" || isNaN(parseFloat(precVal)) || parseFloat(precVal) <= 0) {
                 alertError.innerText = "El precio unitario debe ser un valor numérico mayor a S/ 0.00.";
                 alertError.style.display = "block";
                 document.getElementById("add_precio").focus();
                 return;
             }
-
-            // 6. Stock Inicial
             if (stockVal === "" || isNaN(parseInt(stockVal)) || parseInt(stockVal) < 0) {
                 alertError.innerText = "El stock inicial no puede ser un valor negativo.";
                 alertError.style.display = "block";
                 document.getElementById("add_stock").focus();
                 return;
             }
-
-            // 7. Stock Mínimo
             if (stockMinVal === "" || isNaN(parseInt(stockMinVal)) || parseInt(stockMinVal) < 0) {
                 alertError.innerText = "El stock mínimo no puede ser un valor negativo.";
                 alertError.style.display = "block";
@@ -598,11 +672,10 @@ if (!isset($_SESSION['usuario_logeado'])) {
                 return;
             }
 
-            // RNF-03: Abrir confirmación antes de guardar
             document.getElementById("modalConfirmacionGuardar").style.display = "flex";
         };
 
-        // Ejecutar Guardar (Paso 9-10, RNF-12, RNF-18, Flujo 10.1)
+        // Ejecutar Guardar Producto
         document.getElementById("btnEjecutarGuardar").onclick = function() {
             document.getElementById("modalConfirmacionGuardar").style.display = "none";
             const form = document.getElementById("formAgregarProducto");
@@ -616,7 +689,6 @@ if (!isset($_SESSION['usuario_logeado'])) {
                         mostrarToast(data.mensaje);
                         actualizarTabla();
                     } else {
-                        // Flujo 10.1 / Conservar datos RNF-23
                         alertError.innerText = data.error;
                         alertError.style.display = "block";
                     }
@@ -627,33 +699,224 @@ if (!isset($_SESSION['usuario_logeado'])) {
                 });
         };
 
-        // MODIFICAR PRODUCTO
-        function abrirModalEditar(btn) {
-            document.getElementById('edit_id').value = btn.getAttribute('data-id');
-            document.getElementById('edit_codigo').value = btn.getAttribute('data-codigo');
-            document.getElementById('edit_nombre').value = btn.getAttribute('data-nombre');
-            document.getElementById('edit_categoria').value = btn.getAttribute('data-categoria');
-            document.getElementById('edit_precio').value = btn.getAttribute('data-precio');
-            document.getElementById('edit_stock').value = btn.getAttribute('data-stock');
-            document.getElementById('edit_stock_minimo').value = btn.getAttribute('data-stock-minimo');
-            document.getElementById('edit_unidad_medida').value = btn.getAttribute('data-unidad-medida');
-            document.getElementById('modalEditarProducto').style.display = 'flex';
+        document.getElementById('formAgregarProducto').onsubmit = function(e) {
+            e.preventDefault();
+            document.getElementById('btnPreGuardar').click();
+        };
+
+        // ========================================================
+        // MODIFICAR PRODUCTO (CU 2 - RUP)
+        // ========================================================
+        function limpiarErroresEditar() {
+            if (alertErrorEditar) alertErrorEditar.style.display = 'none';
+            const campos = ['edit_nombre', 'edit_categoria', 'edit_unidad_medida', 'edit_precio', 'edit_stock', 'edit_stock_minimo'];
+            campos.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('input-error');
+            });
         }
+
+        function abrirModalEditar(btn) {
+            const tr = btn.closest('tr');
+            if (tr) {
+                seleccionarFila(tr);
+            }
+
+            const id = btn.getAttribute('data-id');
+            const codigo = btn.getAttribute('data-codigo');
+            const nombre = btn.getAttribute('data-nombre');
+            const categoria = btn.getAttribute('data-categoria') || '';
+            const precio = btn.getAttribute('data-precio');
+            const stock = btn.getAttribute('data-stock');
+            const stockMinimo = btn.getAttribute('data-stock-minimo');
+            const unidadMedida = btn.getAttribute('data-unidad-medida') || 'unidad';
+            const descripcion = btn.getAttribute('data-descripcion') || '';
+
+            document.getElementById('edit_id').value = id;
+            document.getElementById('edit_codigo').value = codigo;
+            document.getElementById('edit_nombre').value = nombre;
+            document.getElementById('edit_precio').value = precio;
+            document.getElementById('edit_stock').value = stock;
+            document.getElementById('edit_stock_minimo').value = stockMinimo;
+            document.getElementById('edit_unidad_medida').value = unidadMedida;
+            if (document.getElementById('edit_descripcion')) {
+                document.getElementById('edit_descripcion').value = descripcion;
+            }
+
+            const editCatSelect = document.getElementById('edit_categoria');
+            if (editCatSelect) {
+                editCatSelect.value = categoria;
+                if (categoria && !editCatSelect.querySelector(`option[value="${CSS.escape(categoria)}"]`)) {
+                    const opt = document.createElement('option');
+                    opt.value = categoria;
+                    opt.textContent = categoria;
+                    opt.selected = true;
+                    editCatSelect.appendChild(opt);
+                }
+            }
+
+            // Guardar estado inicial para detectar el Flujo 4.3 ("Sin cambios")
+            initialEditState = {
+                nombre: (nombre || '').trim(),
+                categoria: (categoria || '').trim(),
+                unidad_medida: (unidadMedida || '').trim(),
+                precio: parseFloat(precio || 0),
+                stock: parseInt(stock || 0),
+                stock_minimo: parseInt(stockMinimo || 0),
+                descripcion: (descripcion || '').trim()
+            };
+
+            limpiarErroresEditar();
+            modalEditar.style.display = 'flex';
+            setTimeout(() => document.getElementById('edit_nombre').focus(), 100);
+        }
+
+        // Pre-Guardar / Validación Modificación (Pasos 3-4, Flujos 4.1, 4.2, 4.3)
+        const btnPreGuardarEditEl = document.getElementById('btnPreGuardarEditar');
+        if (btnPreGuardarEditEl) {
+            btnPreGuardarEditEl.onclick = function() {
+                limpiarErroresEditar();
+
+                const nomInput = document.getElementById('edit_nombre');
+                const catInput = document.getElementById('edit_categoria');
+                const uniInput = document.getElementById('edit_unidad_medida');
+                const precInput = document.getElementById('edit_precio');
+                const stockInput = document.getElementById('edit_stock');
+                const stockMinInput = document.getElementById('edit_stock_minimo');
+                const descInput = document.getElementById('edit_descripcion');
+
+                const nom = nomInput ? nomInput.value.trim() : '';
+                const cat = catInput ? catInput.value.trim() : '';
+                const uni = uniInput ? uniInput.value.trim() : '';
+                const precVal = precInput ? precInput.value : '';
+                const stockVal = stockInput ? stockInput.value : '';
+                const stockMinVal = stockMinInput ? stockMinInput.value : '';
+                const desc = descInput ? descInput.value.trim() : '';
+
+                // Flujo 4.1: Si se elimina el contenido de un campo obligatorio (RNF-04)
+                if (!nom || nom.length < 3) {
+                    if (nomInput) nomInput.classList.add('input-error');
+                    alertErrorEditar.innerText = "El nombre del producto es obligatorio y debe tener al menos 3 caracteres.";
+                    alertErrorEditar.style.display = "block";
+                    if (nomInput) nomInput.focus();
+                    return;
+                }
+
+                if (!cat) {
+                    if (catInput) catInput.classList.add('input-error');
+                    alertErrorEditar.innerText = "Debe seleccionar una categoría obligatoria para el producto.";
+                    alertErrorEditar.style.display = "block";
+                    if (catInput) catInput.focus();
+                    return;
+                }
+
+                if (!uni) {
+                    if (uniInput) uniInput.classList.add('input-error');
+                    alertErrorEditar.innerText = "Debe seleccionar una unidad de medida para el producto.";
+                    alertErrorEditar.style.display = "block";
+                    if (uniInput) uniInput.focus();
+                    return;
+                }
+
+                // Flujo 4.2: Si algún campo numérico contiene valor negativo o no numérico
+                if (precVal === "" || isNaN(parseFloat(precVal)) || parseFloat(precVal) <= 0) {
+                    if (precInput) precInput.classList.add('input-error');
+                    alertErrorEditar.innerText = "El valor ingresado no es válido para este campo.";
+                    alertErrorEditar.style.display = "block";
+                    if (precInput) precInput.focus();
+                    return;
+                }
+
+                if (stockVal === "" || isNaN(parseInt(stockVal)) || parseInt(stockVal) < 0) {
+                    if (stockInput) stockInput.classList.add('input-error');
+                    alertErrorEditar.innerText = "El valor ingresado no es válido para este campo.";
+                    alertErrorEditar.style.display = "block";
+                    if (stockInput) stockInput.focus();
+                    return;
+                }
+
+                if (stockMinVal === "" || isNaN(parseInt(stockMinVal)) || parseInt(stockMinVal) < 0) {
+                    if (stockMinInput) stockMinInput.classList.add('input-error');
+                    alertErrorEditar.innerText = "El valor ingresado no es válido para este campo.";
+                    alertErrorEditar.style.display = "block";
+                    if (stockMinInput) stockMinInput.focus();
+                    return;
+                }
+
+                // Flujo 4.3: Si se intenta guardar sin haber modificado ningún campo
+                const pVal = parseFloat(precVal);
+                const stVal = parseInt(stockVal);
+                const stMinVal = parseInt(stockMinVal);
+
+                if (
+                    nom === initialEditState.nombre &&
+                    cat === initialEditState.categoria &&
+                    uni === initialEditState.unidad_medida &&
+                    Math.abs(pVal - initialEditState.precio) < 0.001 &&
+                    stVal === initialEditState.stock &&
+                    stMinVal === initialEditState.stock_minimo &&
+                    desc === initialEditState.descripcion
+                ) {
+                    alertErrorEditar.innerText = "No se detectaron cambios en el formulario.";
+                    alertErrorEditar.style.display = "block";
+                    return;
+                }
+
+                // Pasos 5-7: Solicitar confirmación antes de guardar (RNF-03)
+                if (modalConfirmacionEditar) modalConfirmacionEditar.style.display = 'flex';
+            };
+        }
+
+        // Ejecutar Modificación (Paso 8, RNF-12, RNF-18, Flujo 7.1)
+        const btnEjecutarActualizarEl = document.getElementById('btnEjecutarActualizar');
+        if (btnEjecutarActualizarEl) {
+            btnEjecutarActualizarEl.onclick = function() {
+                if (modalConfirmacionEditar) modalConfirmacionEditar.style.display = 'none';
+
+                const form = document.getElementById('formEditarProducto');
+                const formData = new FormData(form);
+
+                fetch('../../backend/acciones/actualizar_producto.php', { method: 'POST', body: formData })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.exito) {
+                            if (modalEditar) modalEditar.style.display = 'none';
+                            mostrarToast(data.mensaje || 'El producto ha sido actualizado correctamente.');
+                            actualizarTabla();
+                        } else {
+                            // RNF-23: Conserva datos modificados en el formulario si ocurre un error
+                            alertErrorEditar.innerText = data.error || 'Error al actualizar el producto.';
+                            alertErrorEditar.style.display = 'block';
+                            if (modalEditar) modalEditar.style.display = 'flex';
+                        }
+                    })
+                    .catch(() => {
+                        alertErrorEditar.innerText = 'No se pudo completar la actualización. Intente nuevamente.';
+                        alertErrorEditar.style.display = 'block';
+                        if (modalEditar) modalEditar.style.display = 'flex';
+                    });
+            };
+        }
+
+        // Quitar resaltado de error dinámicamente al modificar inputs
+        ['edit_nombre', 'edit_categoria', 'edit_unidad_medida', 'edit_precio', 'edit_stock', 'edit_stock_minimo'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', function() {
+                    this.classList.remove('input-error');
+                    if (alertErrorEditar) alertErrorEditar.style.display = 'none';
+                });
+                el.addEventListener('change', function() {
+                    this.classList.remove('input-error');
+                    if (alertErrorEditar) alertErrorEditar.style.display = 'none';
+                });
+            }
+        });
 
         document.getElementById('formEditarProducto').onsubmit = function(e) {
             e.preventDefault();
-            const formData = new FormData(this);
-            fetch('../../backend/acciones/actualizar_producto.php', { method: 'POST', body: formData })
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('modalEditarProducto').style.display = 'none';
-                    if (data.exito) {
-                        mostrarToast(data.mensaje);
-                        actualizarTabla();
-                    } else {
-                        alert(data.error);
-                    }
-                });
+            const btnSaveEdit = document.getElementById('btnPreGuardarEditar');
+            if (btnSaveEdit) btnSaveEdit.click();
         };
 
         // DESACTIVAR PRODUCTO
