@@ -1,5 +1,9 @@
 <?php
 session_start();
+if (!isset($_SESSION['usuario_logeado'])) {
+    header("Location: login.php");
+    exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -7,11 +11,12 @@ session_start();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catálogo de Productos | MASS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* RESET & TIPOGRAFÍA */
+        /* RESET & BASE */
+        * { box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background-color: #F3F4F6; margin: 0; display: flex; color: #374151; height: 100vh; overflow: hidden; }
         
         /* BARRA LATERAL */
@@ -22,16 +27,17 @@ session_start();
         .sidebar ul li a { display: flex; align-items: center; width: 100%; padding: 15px 30px; color: #FFFFFF; text-decoration: none; font-weight: 500; transition: 0.3s; gap: 15px; opacity: 0.8; }
         .sidebar ul li a i { font-size: 18px; width: 24px; text-align: center; }
         .sidebar ul li a:hover, .sidebar ul li.active a { background: rgba(255, 209, 0, 0.1); color: #FFD100; border-left: 4px solid #FFD100; opacity: 1; }
+        .sidebar ul li.disabled a { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
 
         /* CONTENIDO PRINCIPAL */
         .content { flex: 1; padding: 30px 40px; overflow-y: auto; }
-        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .header-top h1 { font-size: 28px; font-weight: 700; color: #0F1B2D; margin: 0; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .header-top h1 { font-size: 28px; font-weight: 800; color: #0F1B2D; margin: 0; }
         .user-profile { display: flex; align-items: center; gap: 12px; background: white; padding: 8px 16px; border-radius: 50px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; position: relative; border: 1px solid #E5E7EB; }
         .user-profile span { font-size: 14px; font-weight: 600; color: #374151; }
         .avatar { background: #0F1B2D; color: #FFD100; font-weight: 700; font-size: 13px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
 
-        /* CONTROLES */
+        /* PANEL DE CONTROLES */
         .controls-panel { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #E5E7EB; }
         .filters { display: flex; gap: 10px; }
         .filter-chip { padding: 8px 18px; background: #F3F4F6; color: #4B5563; border-radius: 50px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
@@ -47,12 +53,12 @@ session_start();
         .btn-filter:hover { background: #E5E7EB; }
         .add-btn { background: #FFD100; color: #0F1B2D; box-shadow: 0 4px 6px -1px rgba(255,209,0,0.3); }
         .add-btn:hover { background: #E6BC00; transform: translateY(-1px); }
-        .btn-save { width: 100%; justify-content: center; background: #FFD100; color: #0F1B2D; padding: 14px; font-size: 15px; font-weight: 700; }
+        .btn-save { width: 100%; justify-content: center; background: #FFD100; color: #0F1B2D; padding: 12px; font-size: 15px; font-weight: 700; border-radius: 8px; }
         .btn-save:hover { background: #E6BC00; }
-        .btn-limpiar { width: 100%; justify-content: center; background: #F3F4F6; color: #374151; border: 1px solid #D1D5DB; padding: 14px; font-size: 15px; font-weight: 700; }
-        .btn-limpiar:hover { background: #E5E7EB; }
+        .btn-cancel { width: 100%; justify-content: center; background: #F3F4F6; color: #374151; border: 1px solid #D1D5DB; padding: 12px; font-size: 15px; font-weight: 700; border-radius: 8px; }
+        .btn-cancel:hover { background: #E5E7EB; }
 
-        /* TABLA */
+        /* TABLA DE PRODUCTOS */
         .table-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #E5E7EB; }
         table { width: 100%; border-collapse: collapse; text-align: left; }
         th { background: #F9FAFB; padding: 16px 20px; font-size: 12px; text-transform: uppercase; color: #6B7280; font-weight: 700; border-bottom: 1px solid #E5E7EB; }
@@ -61,41 +67,59 @@ session_start();
         span.normal { background: #DEF7EC; color: #03543F; padding: 6px 12px; border-radius: 50px; font-size: 12px; font-weight: 700; }
         span.warning { background: #FEF3C7; color: #92400E; padding: 6px 12px; border-radius: 50px; font-size: 12px; font-weight: 700; }
         span.danger { background: #FDE8E8; color: #9B1C1C; padding: 6px 12px; border-radius: 50px; font-size: 12px; font-weight: 700; }
-        .action-icon { font-size: 16px; margin-right: 15px; transition: 0.2s; }
+        .action-icon { font-size: 16px; margin-right: 15px; transition: 0.2s; text-decoration: none; display: inline-block; }
         .action-edit { color: #0F1B2D; } .action-edit:hover { color: #1E365A; }
         .action-delete { color: #EF4444; } .action-delete:hover { color: #B91C1C; }
 
         /* MODALES */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(15, 27, 45, 0.6); align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-        .modal-content { background: white; padding: 35px; border-radius: 16px; width: 100%; max-width: 450px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); position: relative; }
-        .modal h2 { margin-top: 0; color: #0F1B2D; font-size: 22px; margin-bottom: 25px; font-weight: 800; text-align: center; }
+        .modal-content { background: white; padding: 30px 35px; border-radius: 16px; width: 100%; max-width: 550px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); position: relative; max-height: 90vh; overflow-y: auto; }
+        .modal h2 { margin-top: 0; color: #0F1B2D; font-size: 22px; margin-bottom: 20px; font-weight: 800; text-align: center; }
         .close-btn { position: absolute; top: 20px; right: 25px; font-size: 24px; color: #9CA3AF; cursor: pointer; transition: 0.2s; }
         .close-btn:hover { color: #111827; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; color: #4B5563; font-weight: 600; font-size: 13px; }
-        .form-group input, .form-group select { width: 100%; padding: 12px 15px; border: 1px solid #D1D5DB; border-radius: 8px; box-sizing: border-box; font-family: 'Inter'; font-size: 14px; outline: none; background: #F9FAFB; }
-        .form-group input:focus, .form-group select:focus { border-color: #0F1B2D; background: white; box-shadow: 0 0 0 3px rgba(15,27,45,0.1); }
+        
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group.full-width { grid-column: span 2; }
+        .form-group label { display: block; margin-bottom: 6px; color: #4B5563; font-weight: 600; font-size: 13px; }
+        .form-group label span.req { color: #EF4444; font-weight: 700; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border: 1px solid #D1D5DB; border-radius: 8px; box-sizing: border-box; font-family: 'Inter'; font-size: 14px; outline: none; background: #F9FAFB; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #0F1B2D; background: white; box-shadow: 0 0 0 3px rgba(15,27,45,0.1); }
+        .form-group input.input-error, .form-group select.input-error { border-color: #EF4444; background: #FEF2F2; }
+        
+        /* INDICADOR DE DISPONIBILIDAD DE CÓDIGO */
+        .status-indicator { display: block; font-size: 12px; font-weight: 600; margin-top: 4px; }
+        .status-available { color: #059669; }
+        .status-duplicate { color: #DC2626; }
+        .status-invalid { color: #DC2626; }
+        .status-deactivated { color: #D97706; }
+
+        /* TOAST DE NOTIFICACIÓN */
+        .toast { position: fixed; bottom: 30px; right: 30px; background: #0F1B2D; color: white; padding: 15px 25px; border-radius: 10px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); font-weight: 600; display: flex; align-items: center; gap: 12px; z-index: 2000; opacity: 0; transform: translateY(20px); transition: 0.3s; pointer-events: none; border-left: 5px solid #FFD100; }
+        .toast.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
     </style>
 </head>
 <body>
 
+    <!-- BARRA LATERAL -->
     <aside class="sidebar">
         <h2>MASS</h2>
         <ul>
-            <li><a href="dashboard.php"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
-            <li class="active"><a href="productos.php"><i class="fa-solid fa-book-open"></i> Catálogo</a></li>
-            <li><a href="movimientos.php"><i class="fa-solid fa-arrow-right-arrow-left"></i> Movimientos</a></li>
-            <li><a href="control_compras.php"><i class="fa-solid fa-clipboard-check"></i> Control de Compras</a></li>
-            <li><a href="recepciones.php"><i class="fa-solid fa-boxes-packing"></i> Recepciones</a></li>
-            <li><a href="reclamos.php"><i class="fa-solid fa-triangle-exclamation"></i> Reclamos</a></li>
+            <li class="disabled"><a href="javascript:void(0)" title="Módulo fuera del alcance actual"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
+            <li class="active"><a href="productos.php"><i class="fa-solid fa-book-open"></i> Catálogo de Productos</a></li>
+            <li class="disabled"><a href="javascript:void(0)" title="Módulo fuera del alcance actual"><i class="fa-solid fa-arrow-right-arrow-left"></i> Movimientos</a></li>
+            <li class="disabled"><a href="javascript:void(0)" title="Módulo fuera del alcance actual"><i class="fa-solid fa-clipboard-check"></i> Control de Compras</a></li>
+            <li class="disabled"><a href="javascript:void(0)" title="Módulo fuera del alcance actual"><i class="fa-solid fa-boxes-packing"></i> Recepciones</a></li>
+            <li class="disabled"><a href="javascript:void(0)" title="Módulo fuera del alcance actual"><i class="fa-solid fa-triangle-exclamation"></i> Reclamos</a></li>
         </ul>
     </aside>
 
+    <!-- CONTENIDO PRINCIPAL -->
     <main class="content">
         <div class="header-top">
             <div>
                 <h1>Catálogo de Productos</h1>
-                <p style="color: #6B7280; font-size: 14px; margin-top: 5px; margin-bottom: 0;">Gestiona el inventario activo de la tienda.</p>
+                <p style="color: #6B7280; font-size: 14px; margin-top: 5px; margin-bottom: 0;">Gestión de inventario de la tienda MASS. Presiona <kbd style="background:#E5E7EB; padding:2px 6px; border-radius:4px; font-weight:700;">Alt + N</kbd> para agregar.</p>
             </div>
             <div class="user-profile" onclick="let menu = document.getElementById('dropdown'); menu.style.display = menu.style.display === 'none' ? 'block' : 'none';">
                 <span>Administrador</span>
@@ -122,12 +146,13 @@ session_start();
                 <button class="btn-filter" onclick="document.getElementById('modalBusqueda').style.display = 'flex'">
                     <i class="fa-solid fa-sliders"></i> Filtros
                 </button>
-                <button class="add-btn" id="btnAbrirModal">
-                    <i class="fa-solid fa-plus"></i> Nuevo Producto
+                <button class="add-btn" id="btnAbrirModal" title="Atajo: Alt + N">
+                    <i class="fa-solid fa-plus"></i> Agregar Producto <span style="font-size: 11px; opacity: 0.8;">(Alt+N)</span>
                 </button>
             </div>
         </div>
 
+        <!-- TABLA DE PRODUCTOS (i_ListadoProductos) -->
         <div class="table-container">
             <table>
                 <thead>
@@ -137,54 +162,448 @@ session_start();
                         <th>Categoría</th>
                         <th>Precio</th>
                         <th>Stock</th>
-                        <th>Mínimo</th>
+                        <th>Stock Mín.</th>
                         <th>Estado</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="tablaProductos">
-                   </tbody>
+                    <!-- Carga asíncrona mediante AJAX -->
+                </tbody>
             </table>
         </div>
     </main>
 
-    <div id="modalBusqueda" class="modal">
+    <!-- MODAL AGREGAR PRODUCTO (i_AgregarProducto) -->
+    <div id="modalAgregarProducto" class="modal">
         <div class="modal-content">
-            <span class="close-btn" id="btnCerrarBusqueda">&times;</span>
-            <h2>Filtros Avanzados</h2>
-            <form id="formBusquedaAvanzada">
-                <div class="form-group">
-                    <label>Categoría</label>
-                    <select id="categoriaBusqueda">
-                        <option value="">Todas las categorías</option>
-                        <option value="Abarrotes">Abarrotes</option>
-                        <option value="Lácteos">Lácteos</option>
-                        <option value="Bebidas">Bebidas</option>
-                        <option value="Limpieza">Limpieza</option>
-                    </select>
-                </div>
-                <div style="display: flex; gap: 15px;">
-                    <div class="form-group" style="flex: 1;">
-                        <label>Precio Mín. (S/)</label>
-                        <input type="number" id="precioMin" step="0.10" min="0" oninput="if(this.value < 0) this.value = ''" placeholder="0.00">
+            <span class="close-btn" id="btnCerrarAgregar">&times;</span>
+            <h2><i class="fa-solid fa-cart-plus" style="color: #FFD100; margin-right: 8px;"></i> Agregar Producto</h2>
+            
+            <div id="alertErrorAgregar" style="display: none; background: #FEE2E2; color: #991B1B; padding: 12px 15px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 15px; border: 1px solid #FCA5A5;"></div>
+
+            <form id="formAgregarProducto">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label>Código del Producto <span class="req">*</span></label>
+                        <input type="text" id="add_codigo" name="codigo" placeholder="Ej: P001" required autocomplete="off">
+                        <span id="indicatorCodigo" class="status-indicator"></span>
                     </div>
-                    <div class="form-group" style="flex: 1;">
-                        <label>Precio Máx. (S/)</label>
-                        <input type="number" id="precioMax" step="0.10" min="0" oninput="if(this.value < 0) this.value = ''" placeholder="0.00">
+
+                    <div class="form-group full-width">
+                        <label>Nombre del Producto <span class="req">*</span></label>
+                        <input type="text" id="add_nombre" name="nombre" placeholder="Ej: Leche Gloria Evaporada 400g" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Categoría <span class="req">*</span></label>
+                        <select id="add_categoria" name="categoria" required>
+                            <option value="">Cargando categorías...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Unidad de Medida <span class="req">*</span></label>
+                        <select id="add_unidad_medida" name="unidad_medida" required>
+                            <option value="unidad">Unidad</option>
+                            <option value="kg">Kilogramo (kg)</option>
+                            <option value="g">Gramo (g)</option>
+                            <option value="litro">Litro (L)</option>
+                            <option value="ml">Mililitro (ml)</option>
+                            <option value="paquete">Paquete</option>
+                            <option value="caja">Caja</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Precio Unitario (S/) <span class="req">*</span></label>
+                        <input type="number" id="add_precio" name="precio" step="0.01" min="0.01" placeholder="0.00" required oninput="if(this.value < 0) this.value = ''">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Stock Inicial <span class="req">*</span></label>
+                        <input type="number" id="add_stock" name="stock" value="0" min="0" required oninput="if(this.value < 0) this.value = 0">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>Stock Mínimo Alerta <span class="req">*</span></label>
+                        <input type="number" id="add_stock_minimo" name="stock_minimo" value="0" min="0" required oninput="if(this.value < 0) this.value = 0">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>Descripción Adicional</label>
+                        <textarea id="add_descripcion" name="descripcion" rows="2" placeholder="Detalles o especificaciones opcionales del producto..."></textarea>
                     </div>
                 </div>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button type="button" class="btn-save" style="flex: 1;" onclick="aplicarFiltrosAvanzados()"><i class="fa-solid fa-filter"></i> Aplicar</button>
-                    <button type="button" class="btn-limpiar" style="flex: 1;" onclick="limpiarFiltrosCatalogo()"><i class="fa-solid fa-eraser"></i> Limpiar</button>
+
+                <div style="display: flex; gap: 12px; margin-top: 15px;">
+                    <button type="button" class="btn-cancel" style="flex: 1;" onclick="cerrarModalAgregar()">Cancelar</button>
+                    <button type="button" id="btnPreGuardar" class="btn-save" style="flex: 1;" title="Atajo: Alt + G">
+                        <i class="fa-solid fa-floppy-disk"></i> Guardar (Alt+G)
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- MODAL CONFIRMACIÓN DE REGISTRO (RNF-03) -->
+    <div id="modalConfirmacionGuardar" class="modal">
+        <div class="modal-content" style="max-width: 420px; text-align: center;">
+            <div style="font-size: 48px; color: #FFD100; margin-bottom: 15px;"><i class="fa-solid fa-circle-question"></i></div>
+            <h2>Confirmar Registro</h2>
+            <p style="color: #4B5563; font-size: 14px; margin-bottom: 25px;">¿Está seguro de registrar este nuevo producto en el inventario?</p>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" class="btn-cancel" style="flex: 1;" onclick="document.getElementById('modalConfirmacionGuardar').style.display='none'">Cancelar</button>
+                <button type="button" id="btnEjecutarGuardar" class="btn-save" style="flex: 1;">Sí, Registrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL REACTIVACIÓN DE PRODUCTO (Flujo 4.3) -->
+    <div id="modalReactivar" class="modal">
+        <div class="modal-content" style="max-width: 440px; text-align: center;">
+            <div style="font-size: 48px; color: #F59E0B; margin-bottom: 15px;"><i class="fa-solid fa-rotate-left"></i></div>
+            <h2>Producto Desactivado</h2>
+            <p id="msgReactivar" style="color: #4B5563; font-size: 14px; margin-bottom: 25px;">Este código corresponde a un producto desactivado. ¿Desea reactivarlo?</p>
+            <input type="hidden" id="reactivar_codigo">
+            <div style="display: flex; gap: 10px;">
+                <button type="button" class="btn-cancel" style="flex: 1;" onclick="document.getElementById('modalReactivar').style.display='none'">No, Cancelar</button>
+                <button type="button" id="btnEjecutarReactivar" class="btn-save" style="flex: 1; background: #F59E0B; color: white;">Sí, Reactivar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR PRODUCTO -->
+    <div id="modalEditarProducto" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="document.getElementById('modalEditarProducto').style.display='none'">&times;</span>
+            <h2><i class="fa-solid fa-pen-to-square" style="color: #0F1B2D; margin-right: 8px;"></i> Modificar Producto</h2>
+            <form id="formEditarProducto">
+                <input type="hidden" id="edit_id" name="id">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label>Código del Producto</label>
+                        <input type="text" id="edit_codigo" disabled style="background: #E5E7EB; cursor: not-allowed;">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Nombre del Producto <span class="req">*</span></label>
+                        <input type="text" id="edit_nombre" name="nombre" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Categoría <span class="req">*</span></label>
+                        <select id="edit_categoria" name="categoria" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Unidad de Medida <span class="req">*</span></label>
+                        <select id="edit_unidad_medida" name="unidad_medida" required>
+                            <option value="unidad">Unidad</option>
+                            <option value="kg">Kilogramo (kg)</option>
+                            <option value="g">Gramo (g)</option>
+                            <option value="litro">Litro (L)</option>
+                            <option value="ml">Mililitro (ml)</option>
+                            <option value="paquete">Paquete</option>
+                            <option value="caja">Caja</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Precio Unitario (S/) <span class="req">*</span></label>
+                        <input type="number" id="edit_precio" name="precio" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Stock Actual <span class="req">*</span></label>
+                        <input type="number" id="edit_stock" name="stock" min="0" required>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Stock Mínimo <span class="req">*</span></label>
+                        <input type="number" id="edit_stock_minimo" name="stock_minimo" min="0" required>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 15px;">
+                    <button type="button" class="btn-cancel" style="flex: 1;" onclick="document.getElementById('modalEditarProducto').style.display='none'">Cancelar</button>
+                    <button type="submit" class="btn-save" style="flex: 1;"><i class="fa-solid fa-floppy-disk"></i> Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL FILTROS AVANZADOS -->
+    <div id="modalBusqueda" class="modal">
+        <div class="modal-content" style="max-width: 450px;">
+            <span class="close-btn" id="btnCerrarBusqueda">&times;</span>
+            <h2><i class="fa-solid fa-sliders" style="margin-right: 8px;"></i> Filtros Avanzados</h2>
+            <form id="formBusquedaAvanzada">
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select id="categoriaBusqueda">
+                        <option value="">Todas las categorías</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 15px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Precio Mín. (S/)</label>
+                        <input type="number" id="precioMin" step="0.10" min="0" placeholder="0.00">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Precio Máx. (S/)</label>
+                        <input type="number" id="precioMax" step="0.10" min="0" placeholder="0.00">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button type="button" class="btn-save" style="flex: 1;" onclick="aplicarFiltrosAvanzados()"><i class="fa-solid fa-filter"></i> Aplicar</button>
+                    <button type="button" class="btn-cancel" style="flex: 1;" onclick="limpiarFiltrosCatalogo()"><i class="fa-solid fa-eraser"></i> Limpiar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- NOTIFICACIÓN TOAST -->
+    <div id="toastNotification" class="toast">
+        <i class="fa-solid fa-circle-check" style="font-size: 20px; color: #FFD100;"></i>
+        <span id="toastMessage">Acción completada con éxito.</span>
+    </div>
+
     <script>
+        const modalAgregar = document.getElementById("modalAgregarProducto");
         const modalBusq = document.getElementById("modalBusqueda");
+        const inputCodigo = document.getElementById("add_codigo");
+        const indicatorCodigo = document.getElementById("indicatorCodigo");
+        const alertError = document.getElementById("alertErrorAgregar");
+        
+        let codigoValido = false;
+        let esDesactivado = false;
+
+        // Cargar Categorías Dinámicamente (c_ValidarProducto / e_Categoria)
+        function cargarCategorias() {
+            fetch('../../backend/acciones/obtener_categorias.php')
+                .then(res => res.json())
+                .then(cats => {
+                    let options = '<option value="">Seleccione categoría...</option>';
+                    let filterOptions = '<option value="">Todas las categorías</option>';
+                    cats.forEach(c => {
+                        options += `<option value="${c}">${c}</option>`;
+                        filterOptions += `<option value="${c}">${c}</option>`;
+                    });
+                    document.getElementById('add_categoria').innerHTML = options;
+                    document.getElementById('edit_categoria').innerHTML = options;
+                    document.getElementById('categoriaBusqueda').innerHTML = filterOptions;
+                });
+        }
+
+        // Mostrar Toast Notification
+        function mostrarToast(msg) {
+            const toast = document.getElementById("toastNotification");
+            document.getElementById("toastMessage").innerText = msg;
+            toast.classList.add("show");
+            setTimeout(() => toast.classList.remove("show"), 3500);
+        }
+
+        // Abrir Modal Agregar (Paso 1-2, RNF-08)
+        function abrirModalAgregar() {
+            document.getElementById("formAgregarProducto").reset();
+            document.getElementById("add_stock").value = "0";
+            document.getElementById("add_stock_minimo").value = "0";
+            indicatorCodigo.innerText = "";
+            indicatorCodigo.className = "status-indicator";
+            alertError.style.display = "none";
+            codigoValido = false;
+            esDesactivado = false;
+            modalAgregar.style.display = "flex";
+            setTimeout(() => inputCodigo.focus(), 100);
+        }
+
+        function cerrarModalAgregar() {
+            modalAgregar.style.display = "none";
+        }
+
+        document.getElementById("btnAbrirModal").onclick = abrirModalAgregar;
+        document.getElementById("btnCerrarAgregar").onclick = cerrarModalAgregar;
         document.getElementById("btnCerrarBusqueda").onclick = () => modalBusq.style.display = "none";
 
+        // Atajos de teclado (Alt+N y Alt+G)
+        document.addEventListener("keydown", function(e) {
+            if (e.altKey && (e.key === "n" || e.key === "N")) {
+                e.preventDefault();
+                abrirModalAgregar();
+            }
+            if (e.altKey && (e.key === "g" || e.key === "G")) {
+                e.preventDefault();
+                if (modalAgregar.style.display === "flex") {
+                    document.getElementById("btnPreGuardar").click();
+                }
+            }
+        });
+
+        // Verificación en tiempo real de Código (Pasos 3-4, Flujos 4.1, 4.2, 4.3)
+        let timerVerificacion;
+        inputCodigo.addEventListener("input", function() {
+            clearTimeout(timerVerificacion);
+            const val = this.value.trim();
+            alertError.style.display = "none";
+
+            if (val === "") {
+                indicatorCodigo.innerText = "";
+                indicatorCodigo.className = "status-indicator";
+                codigoValido = false;
+                return;
+            }
+
+            timerVerificacion = setTimeout(() => {
+                fetch(`../../backend/acciones/verificar_codigo.php?codigo=${encodeURIComponent(val)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.estado === 'disponible') {
+                            indicatorCodigo.innerText = '✓ ' + data.mensaje;
+                            indicatorCodigo.className = 'status-indicator status-available';
+                            codigoValido = true;
+                            esDesactivado = false;
+                        } else if (data.estado === 'formato_invalido') {
+                            indicatorCodigo.innerText = '✕ ' + data.mensaje;
+                            indicatorCodigo.className = 'status-indicator status-invalid';
+                            codigoValido = false;
+                            esDesactivado = false;
+                        } else if (data.estado === 'duplicado_activo') {
+                            indicatorCodigo.innerText = '✕ ' + data.mensaje;
+                            indicatorCodigo.className = 'status-indicator status-duplicate';
+                            codigoValido = false;
+                            esDesactivado = false;
+                        } else if (data.estado === 'desactivado') {
+                            indicatorCodigo.innerText = '⚠ ' + data.mensaje;
+                            indicatorCodigo.className = 'status-indicator status-deactivated';
+                            codigoValido = false;
+                            esDesactivado = true;
+                            document.getElementById('reactivar_codigo').value = val;
+                            document.getElementById('msgReactivar').innerText = data.mensaje;
+                            document.getElementById('modalReactivar').style.display = 'flex';
+                        }
+                    });
+            }, 300);
+        });
+
+        // Reactivación de producto previamente desactivado (Flujo 4.3)
+        document.getElementById('btnEjecutarReactivar').onclick = function() {
+            const cod = document.getElementById('reactivar_codigo').value;
+            const formData = new FormData();
+            formData.append('codigo', cod);
+
+            fetch('../../backend/acciones/reactivar_producto.php', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('modalReactivar').style.display = 'none';
+                    cerrarModalAgregar();
+                    if (data.exito) {
+                        mostrarToast(data.mensaje);
+                        actualizarTabla();
+                    } else {
+                        alert(data.error);
+                    }
+                });
+        };
+
+        // Pre-guardar: Validación y solicitud de confirmación (Pasos 5-8, RNF-04, RNF-03, Flujos 6.1, 6.2)
+        document.getElementById("btnPreGuardar").onclick = function() {
+            alertError.style.display = "none";
+            const cod = inputCodigo.value.trim();
+            const nom = document.getElementById("add_nombre").value.trim();
+            const cat = document.getElementById("add_categoria").value;
+            const prec = parseFloat(document.getElementById("add_precio").value);
+            const stock = parseInt(document.getElementById("add_stock").value);
+            const stockMin = parseInt(document.getElementById("add_stock_minimo").value);
+
+            // RNF-04: Campos requeridos vacíos
+            if (!cod || !nom || !cat || isNaN(prec)) {
+                alertError.innerText = "Por favor, complete los campos obligatorios (*) antes de continuar.";
+                alertError.style.display = "block";
+                return;
+            }
+
+            // Flujo 6.2: Numérico negativo o inválido
+            if (prec <= 0 || stock < 0 || stockMin < 0) {
+                alertError.innerText = "El valor ingresado no es válido para este campo.";
+                alertError.style.display = "block";
+                return;
+            }
+
+            if (!codigoValido) {
+                alertError.innerText = indicatorCodigo.innerText || "Verifique el código del producto.";
+                alertError.style.display = "block";
+                return;
+            }
+
+            // RNF-03: Abrir confirmación antes de guardar
+            document.getElementById("modalConfirmacionGuardar").style.display = "flex";
+        };
+
+        // Ejecutar Guardar (Paso 9-10, RNF-12, RNF-18, Flujo 10.1)
+        document.getElementById("btnEjecutarGuardar").onclick = function() {
+            document.getElementById("modalConfirmacionGuardar").style.display = "none";
+            const form = document.getElementById("formAgregarProducto");
+            const formData = new FormData(form);
+
+            fetch('../../backend/acciones/guardar_producto.php', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.exito) {
+                        cerrarModalAgregar();
+                        mostrarToast(data.mensaje);
+                        actualizarTabla();
+                    } else {
+                        // Flujo 10.1 / Conservar datos RNF-23
+                        alertError.innerText = data.error;
+                        alertError.style.display = "block";
+                    }
+                })
+                .catch(() => {
+                    alertError.innerText = "No se pudo completar el registro. Intente nuevamente.";
+                    alertError.style.display = "block";
+                });
+        };
+
+        // MODIFICAR PRODUCTO
+        function abrirModalEditar(btn) {
+            document.getElementById('edit_id').value = btn.getAttribute('data-id');
+            document.getElementById('edit_codigo').value = btn.getAttribute('data-codigo');
+            document.getElementById('edit_nombre').value = btn.getAttribute('data-nombre');
+            document.getElementById('edit_categoria').value = btn.getAttribute('data-categoria');
+            document.getElementById('edit_precio').value = btn.getAttribute('data-precio');
+            document.getElementById('edit_stock').value = btn.getAttribute('data-stock');
+            document.getElementById('edit_stock_minimo').value = btn.getAttribute('data-stock-minimo');
+            document.getElementById('edit_unidad_medida').value = btn.getAttribute('data-unidad-medida');
+            document.getElementById('modalEditarProducto').style.display = 'flex';
+        }
+
+        document.getElementById('formEditarProducto').onsubmit = function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            fetch('../../backend/acciones/actualizar_producto.php', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('modalEditarProducto').style.display = 'none';
+                    if (data.exito) {
+                        mostrarToast(data.mensaje);
+                        actualizarTabla();
+                    } else {
+                        alert(data.error);
+                    }
+                });
+        };
+
+        // DESACTIVAR PRODUCTO
+        function confirmarDesactivar(id, nombre) {
+            if (confirm(`¿Seguro que deseas desactivar el producto "${nombre}"?`)) {
+                fetch(`../../backend/acciones/eliminar_producto.php?id=${id}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.exito) {
+                            mostrarToast(data.mensaje);
+                            actualizarTabla();
+                        } else {
+                            alert(data.error);
+                        }
+                    });
+            }
+        }
+
+        // BÚSQUEDA Y FILTRADO
         const inputBuscar = document.getElementById('inputBuscar');
         const filtros = document.querySelectorAll('.filter-chip');
         let filtroActual = 'Todos';
@@ -195,7 +614,7 @@ session_start();
             let max = document.getElementById('precioMax').value;
             let cat = document.getElementById('categoriaBusqueda').value;
 
-            fetch(`../../backend/acciones/filtrar_productos.php?q=${q}&f=${filtroActual}&min=${min}&max=${max}&cat=${cat}`)
+            fetch(`../../backend/acciones/filtrar_productos.php?q=${encodeURIComponent(q)}&f=${encodeURIComponent(filtroActual)}&min=${min}&max=${max}&cat=${encodeURIComponent(cat)}`)
                 .then(res => res.text())
                 .then(html => document.getElementById('tablaProductos').innerHTML = html);
         }
@@ -211,7 +630,6 @@ session_start();
             document.getElementById('categoriaBusqueda').value = '';
             document.getElementById('inputBuscar').value = '';
             
-            // Reiniciar los chips al "Todos"
             filtros.forEach(f => f.classList.remove('active'));
             filtros[0].classList.add('active');
             filtroActual = 'Todos';
@@ -230,8 +648,10 @@ session_start();
             });
         });
 
-        // Carga inicial
-        window.onload = actualizarTabla;
+        window.onload = function() {
+            cargarCategorias();
+            actualizarTabla();
+        };
     </script>
 </body>
 </html>

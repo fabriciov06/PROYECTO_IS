@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/Producto.php';
+require_once __DIR__ . '/Auditoria.php';
 
 class Catalogo {
     private int $idCatalogo;
@@ -13,41 +14,123 @@ class Catalogo {
         $this->fechaActualizacion = $fechaActualizacion;
     }
 
-    public static function agregarProducto(mysqli $conexion, string $codigo, string $nombre, string $categoria, float $precio, int $stockMinimo): array {
-        $codigoEscaped = $conexion->real_escape_string($codigo);
-        $nombreEscaped = $conexion->real_escape_string($nombre);
-        $categoriaEscaped = $conexion->real_escape_string($categoria);
-        $stock = 0;
-        $estado = 'Agotado';
+    public static function agregarProducto(
+        mysqli $conexion,
+        string $codigo,
+        string $nombre,
+        string $categoria,
+        float $precio,
+        int $stockMinimo = 0,
+        int $stockInicial = 0,
+        string $unidadMedida = 'unidad',
+        string $descripcion = '',
+        string $usuario = 'Administrador'
+    ): array {
+        // Sanitización (RNF-17)
+        $codigoEscaped = $conexion->real_escape_string(htmlspecialchars(trim($codigo)));
+        $nombreEscaped = $conexion->real_escape_string(htmlspecialchars(trim($nombre)));
+        $categoriaEscaped = $conexion->real_escape_string(htmlspecialchars(trim($categoria)));
+        $unidadMedidaEscaped = $conexion->real_escape_string(htmlspecialchars(trim($unidadMedida)));
+        $descripcionEscaped = $conexion->real_escape_string(htmlspecialchars(trim($descripcion)));
+        $estado = 'Activo';
 
-        if ($precio <= 0 || $stockMinimo < 0) {
-            return ['exito' => false, 'error' => 'El precio debe ser mayor a 0 y el stock no puede ser negativo.'];
+        // Validaciones numéricas (Flujo 6.2)
+        if ($precio <= 0 || $stockInicial < 0 || $stockMinimo < 0) {
+            return [
+                'exito' => false,
+                'error' => 'El valor ingresado no es válido para este campo.'
+            ];
         }
 
-        $check = $conexion->query("SELECT id_producto FROM productos WHERE codigo = '$codigoEscaped'");
-        if ($check && $check->num_rows > 0) {
-            return ['exito' => false, 'error' => 'codigo_duplicado'];
+        // Verificación de código (Flujo 4.1 y 4.3)
+        $verificacion = Producto::verificarCodigo($conexion, $codigoEscaped);
+        if ($verificacion['estado'] === 'formato_invalido') {
+            return ['exito' => false, 'error' => $verificacion['mensaje']];
+        }
+        if ($verificacion['estado'] === 'duplicado_activo') {
+            return ['exito' => false, 'error' => $verificacion['mensaje']];
+        }
+        if ($verificacion['estado'] === 'desactivado') {
+            return [
+                'exito' => false,
+                'es_desactivado' => true,
+                'error' => $verificacion['mensaje'],
+                'codigo' => $codigoEscaped
+            ];
         }
 
-        $sql = "INSERT INTO productos (codigo, nombre, categoria, precio, stock, stock_minimo, estado) 
-                VALUES ('$codigoEscaped', '$nombreEscaped', '$categoriaEscaped', '$precio', '$stock', '$stockMinimo', '$estado')";
+        // Inserción protegida en menos de 2 segundos (RNF-12)
+        $sql = "INSERT INTO productos (codigo, nombre, categoria, precio, stock, stock_minimo, unidad_medida, descripcion, estado) 
+                VALUES ('$codigoEscaped', '$nombreEscaped', '$categoriaEscaped', $precio, $stockInicial, $stockMinimo, '$unidadMedidaEscaped', '$descripcionEscaped', '$estado')";
 
         if ($conexion->query($sql) === TRUE) {
-            return ['exito' => true];
+            $idNuevo = $conexion->insert_id;
+            // Auditoría automática (RNF-18)
+            Auditoria::registrar(
+                $conexion,
+                $usuario,
+                TipoOperacion::CREAR,
+                'Producto',
+                $idNuevo,
+                "Registro de nuevo producto: $codigoEscaped - $nombreEscaped (Stock: $stockInicial, Mín: $stockMinimo, Precio: S/ $precio)"
+            );
+            return [
+                'exito' => true,
+                'mensaje' => 'El producto ha sido registrado correctamente.'
+            ];
         } else {
-            return ['exito' => false, 'error' => $conexion->error];
+            return [
+                'exito' => false,
+                'error' => 'No se pudo completar el registro. Intente nuevamente.'
+            ];
         }
     }
 
-    public static function modificarProducto(mysqli $conexion, int $id, string $nombre, float $precio, int $stock): bool {
-        $nombreEscaped = $conexion->real_escape_string($nombre);
-        $sql = "UPDATE productos SET nombre='$nombreEscaped', precio='$precio', stock='$stock' WHERE id_producto = $id";
-        return $conexion->query($sql) === TRUE;
+    public static function modificarProducto(
+        mysqli $conexion,
+        int $id,
+        string $nombre,
+        string $categoria,
+        float $precio,
+        int $stock,
+        int $stockMinimo = 0,
+        string $unidadMedida = 'unidad',
+        string $usuario = 'Administrador'
+    ): bool {
+        $nombreEscaped = $conexion->real_escape_string(htmlspecialchars(trim($nombre)));
+        $categoriaEscaped = $conexion->real_escape_string(htmlspecialchars(trim($categoria)));
+        $unidadMedidaEscaped = $conexion->real_escape_string(htmlspecialchars(trim($unidadMedida)));
+
+        $sql = "UPDATE productos SET nombre='$nombreEscaped', categoria='$categoriaEscaped', precio=$precio, stock=$stock, stock_minimo=$stockMinimo, unidad_medida='$unidadMedidaEscaped' WHERE id_producto = $id";
+        
+        if ($conexion->query($sql) === TRUE) {
+            Auditoria::registrar(
+                $conexion,
+                $usuario,
+                TipoOperacion::MODIFICAR,
+                'Producto',
+                $id,
+                "Modificación de datos de producto ID: $id ($nombreEscaped)"
+            );
+            return true;
+        }
+        return false;
     }
 
-    public static function desactivarProducto(mysqli $conexion, int $id): bool {
-        $sql = "DELETE FROM productos WHERE id_producto = $id";
-        return $conexion->query($sql) === TRUE;
+    public static function desactivarProducto(mysqli $conexion, int $id, string $usuario = 'Administrador'): bool {
+        $sql = "UPDATE productos SET estado = 'Desactivado' WHERE id_producto = $id";
+        if ($conexion->query($sql) === TRUE) {
+            Auditoria::registrar(
+                $conexion,
+                $usuario,
+                TipoOperacion::DESACTIVAR,
+                'Producto',
+                $id,
+                "Desactivación lógica de producto ID: $id"
+            );
+            return true;
+        }
+        return false;
     }
 
     public function replicarASedes(): void {

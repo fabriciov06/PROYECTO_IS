@@ -7,6 +7,7 @@ CREATE DATABASE IF NOT EXISTS inventario_mass;
 USE inventario_mass;
 
 -- Limpieza de tablas (Orden estricto por Foreign Keys)
+DROP TABLE IF EXISTS auditoria;
 DROP TABLE IF EXISTS reclamos;
 DROP TABLE IF EXISTS detalle_informe;
 DROP TABLE IF EXISTS informe_recepcion;
@@ -27,6 +28,17 @@ DROP TABLE IF EXISTS supervisores;
 DROP TABLE IF EXISTS operadores;
 DROP TABLE IF EXISTS administradores;
 DROP TABLE IF EXISTS usuarios;
+
+-- Tabla de Auditoría (RNF-18)
+CREATE TABLE auditoria (
+    idAuditoria INT PRIMARY KEY AUTO_INCREMENT,
+    usuario VARCHAR(100) NOT NULL,
+    fecha DATETIME NOT NULL,
+    tipo ENUM('crear','modificar','desactivar') NOT NULL,
+    entidad VARCHAR(50) NOT NULL,
+    idRegistro INT NOT NULL,
+    detalle TEXT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========================================================
 -- 1. TABLAS DE USUARIOS Y ROLES (HERENCIA UML)

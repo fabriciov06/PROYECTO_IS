@@ -7,7 +7,7 @@ $user = $_POST['usuario'] ?? '';
 $pass = $_POST['contrasenia'] ?? '';
 
 if (Usuario::login($conexion, $user, $pass)) {
-    header("Location: ../../frontend/pages/dashboard.php");
+    header("Location: ../../frontend/pages/productos.php");
     exit();
 } else {
     header("Location: ../../frontend/pages/login.php?error=1");

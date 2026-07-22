@@ -11,11 +11,11 @@ class Categoria {
     }
 
     public static function listar(mysqli $conexion): array {
-        $res = $conexion->query("SELECT DISTINCT categoria FROM productos WHERE categoria IS NOT NULL AND categoria != '' ORDER BY categoria ASC");
+        $res = $conexion->query("SELECT DISTINCT nombre FROM categorias UNION SELECT DISTINCT categoria AS nombre FROM productos WHERE categoria IS NOT NULL AND categoria != '' ORDER BY nombre ASC");
         $categorias = [];
         if ($res && $res->num_rows > 0) {
             while ($row = $res->fetch_assoc()) {
-                $categorias[] = $row['categoria'];
+                $categorias[] = $row['nombre'];
             }
         }
         return $categorias;
