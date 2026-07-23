@@ -90,8 +90,8 @@ $_SESSION['last_activity'] = time();
         .form-group label { display: block; margin-bottom: 6px; color: #4B5563; font-weight: 600; font-size: 13px; }
         .form-group label span.req { color: #EF4444; font-weight: 700; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border: 1px solid #D1D5DB; border-radius: 8px; box-sizing: border-box; font-family: 'Inter'; font-size: 14px; outline: none; background: #F9FAFB; }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #0F1B2D; background: white; box-shadow: 0 0 0 3px rgba(15,27,45,0.1); }
-        .form-group input.input-error, .form-group select.input-error { border-color: #EF4444; background: #FEF2F2; }
+        .form-group input.input-error, .form-group select.input-error, .form-group textarea.input-error { border-color: #EF4444 !important; background: #FEF2F2 !important; box-shadow: 0 0 0 3px rgba(239,68,68,0.2) !important; }
+        .field-error-text { color: #DC2626; font-size: 12px; font-weight: 600; margin-top: 4px; display: none; }
         
         /* INDICADOR DE DISPONIBILIDAD DE CÓDIGO */
         .status-indicator { display: block; font-size: 12px; font-weight: 600; margin-top: 4px; }
@@ -204,6 +204,7 @@ $_SESSION['last_activity'] = time();
                     <div class="form-group full-width">
                         <label>Nombre del Producto <span class="req">*</span></label>
                         <input type="text" id="add_nombre" name="nombre" placeholder="Ej: Leche Gloria Evaporada 400g" required>
+                        <div id="err_add_nombre" class="field-error-text"></div>
                     </div>
 
                     <div class="form-group">
@@ -211,6 +212,7 @@ $_SESSION['last_activity'] = time();
                         <select id="add_categoria" name="categoria" required>
                             <option value="">Cargando categorías...</option>
                         </select>
+                        <div id="err_add_categoria" class="field-error-text"></div>
                     </div>
 
                     <div class="form-group">
@@ -224,21 +226,25 @@ $_SESSION['last_activity'] = time();
                             <option value="paquete">Paquete</option>
                             <option value="caja">Caja</option>
                         </select>
+                        <div id="err_add_unidad_medida" class="field-error-text"></div>
                     </div>
 
                     <div class="form-group">
                         <label>Precio Unitario (S/) <span class="req">*</span></label>
                         <input type="number" id="add_precio" name="precio" step="0.01" min="0.01" placeholder="0.00" required oninput="if(this.value < 0) this.value = ''">
+                        <div id="err_add_precio" class="field-error-text"></div>
                     </div>
 
                     <div class="form-group">
                         <label>Stock Inicial <span class="req">*</span></label>
                         <input type="number" id="add_stock" name="stock" value="0" min="0" required oninput="if(this.value < 0) this.value = 0">
+                        <div id="err_add_stock" class="field-error-text"></div>
                     </div>
 
                     <div class="form-group full-width">
                         <label>Stock Mínimo Alerta <span class="req">*</span></label>
                         <input type="number" id="add_stock_minimo" name="stock_minimo" value="0" min="0" required oninput="if(this.value < 0) this.value = 0">
+                        <div id="err_add_stock_minimo" class="field-error-text"></div>
                     </div>
 
                     <div class="form-group full-width">
@@ -755,6 +761,24 @@ let desactivacionEnCurso = false;
                 const el = document.getElementById(id);
                 if (el) el.classList.remove('input-error');
             });
+            ['err_add_nombre', 'err_add_categoria', 'err_add_unidad_medida', 'err_add_precio', 'err_add_stock', 'err_add_stock_minimo'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) { el.innerText = ''; el.style.display = 'none'; }
+            });
+        }
+
+        function mostrarErrorCampoAgregar(inputId, errId, mensaje) {
+            limpiarErroresAgregar();
+            const el = document.getElementById(inputId);
+            const errEl = document.getElementById(errId);
+            if (el) {
+                el.classList.add('input-error');
+                el.focus();
+            }
+            if (errEl) {
+                errEl.innerText = mensaje;
+                errEl.style.display = 'block';
+            }
         }
 
         // Pre-guardar Agregar Producto
@@ -792,66 +816,45 @@ let desactivacionEnCurso = false;
                 return;
             }
 
-            // Flujo 6.1: Campos obligatorios incompletos
+            // Flujo 6.1: Nombre obligatorio
             if (!nom) {
-                if (inputNomEl) inputNomEl.classList.add('input-error');
-                alertError.innerText = "Este campo es obligatorio.";
-                alertError.style.display = "block";
-                if (inputNomEl) inputNomEl.focus();
+                mostrarErrorCampoAgregar('add_nombre', 'err_add_nombre', 'Este campo es obligatorio.');
                 return;
             }
 
             // Flujo 6.4: Nombre muy corto
             if (nom.length < 3) {
-                if (inputNomEl) inputNomEl.classList.add('input-error');
-                alertError.innerText = "El nombre del producto debe tener al menos 3 caracteres.";
-                alertError.style.display = "block";
-                if (inputNomEl) inputNomEl.focus();
+                mostrarErrorCampoAgregar('add_nombre', 'err_add_nombre', 'El nombre del producto debe tener al menos 3 caracteres.');
                 return;
             }
 
             // Flujo 6.1: Categoría obligatoria
             if (!cat) {
-                if (inputCatEl) inputCatEl.classList.add('input-error');
-                alertError.innerText = "Este campo es obligatorio.";
-                alertError.style.display = "block";
-                if (inputCatEl) inputCatEl.focus();
+                mostrarErrorCampoAgregar('add_categoria', 'err_add_categoria', 'Este campo es obligatorio.');
                 return;
             }
 
             // Flujo 6.1: Unidad de medida obligatoria
             if (!unidad) {
-                if (inputUniEl) inputUniEl.classList.add('input-error');
-                alertError.innerText = "Este campo es obligatorio.";
-                alertError.style.display = "block";
-                if (inputUniEl) inputUniEl.focus();
+                mostrarErrorCampoAgregar('add_unidad_medida', 'err_add_unidad_medida', 'Este campo es obligatorio.');
                 return;
             }
 
             // Flujo 6.2: Precio inválido
             if (precVal === "" || isNaN(parseFloat(precVal)) || parseFloat(precVal) <= 0) {
-                if (inputPrecEl) inputPrecEl.classList.add('input-error');
-                alertError.innerText = "El precio debe ser mayor a cero.";
-                alertError.style.display = "block";
-                if (inputPrecEl) inputPrecEl.focus();
+                mostrarErrorCampoAgregar('add_precio', 'err_add_precio', 'El precio debe ser mayor a cero.');
                 return;
             }
 
             // Flujo 6.3: Stock inicial inválido
             if (stockVal === "" || isNaN(parseInt(stockVal)) || parseInt(stockVal) < 0) {
-                if (inputStockEl) inputStockEl.classList.add('input-error');
-                alertError.innerText = "El stock no puede ser negativo.";
-                alertError.style.display = "block";
-                if (inputStockEl) inputStockEl.focus();
+                mostrarErrorCampoAgregar('add_stock', 'err_add_stock', 'El stock no puede ser negativo.');
                 return;
             }
 
             // Flujo 6.3: Stock mínimo alerta inválido
             if (stockMinVal === "" || isNaN(parseInt(stockMinVal)) || parseInt(stockMinVal) < 0) {
-                if (inputStockMinEl) inputStockMinEl.classList.add('input-error');
-                alertError.innerText = "El stock no puede ser negativo.";
-                alertError.style.display = "block";
-                if (inputStockMinEl) inputStockMinEl.focus();
+                mostrarErrorCampoAgregar('add_stock_minimo', 'err_add_stock_minimo', 'El stock no puede ser negativo.');
                 return;
             }
 
@@ -865,10 +868,14 @@ let desactivacionEnCurso = false;
                 el.addEventListener('input', function() {
                     this.classList.remove('input-error');
                     alertError.style.display = 'none';
+                    const errEl = document.getElementById('err_' + id);
+                    if (errEl) { errEl.innerText = ''; errEl.style.display = 'none'; }
                 });
                 el.addEventListener('change', function() {
                     this.classList.remove('input-error');
                     alertError.style.display = 'none';
+                    const errEl = document.getElementById('err_' + id);
+                    if (errEl) { errEl.innerText = ''; errEl.style.display = 'none'; }
                 });
             }
         });
