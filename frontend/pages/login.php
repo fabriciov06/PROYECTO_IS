@@ -4,6 +4,7 @@ if (isset($_SESSION['usuario_logeado'])) {
     header("Location: productos.php");
     exit();
 }
+$isTimeout = isset($_GET['timeout']) && $_GET['timeout'] == '1';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -180,9 +181,9 @@ if (isset($_SESSION['usuario_logeado'])) {
             <p class="login-box-msg">Inicia sesión con tus credenciales</p>
             
             <!-- Bloque de alerta de error -->
-            <div id="alertError" class="error-msg">
+            <div id="alertError" class="error-msg" style="<?php echo $isTimeout ? 'display: block;' : ''; ?>">
                 <i class="fa-solid fa-circle-exclamation" style="margin-right: 5px;"></i>
-                <span id="alertErrorText">Usuario o contraseña incorrectos.</span>
+                <span id="alertErrorText"><?php echo $isTimeout ? 'Su sesión ha expirado por inactividad (30 minutos). Por favor, inicie sesión nuevamente.' : 'Usuario o contraseña incorrectos.'; ?></span>
             </div>
             
             <form id="formLogin" novalidate autocomplete="off">

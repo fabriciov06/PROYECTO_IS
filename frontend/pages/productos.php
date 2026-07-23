@@ -4,6 +4,16 @@ if (!isset($_SESSION['usuario_logeado'])) {
     header("Location: login.php");
     exit();
 }
+
+// RNF-15: Cierre de sesión automático tras 30 minutos (1800 segundos) de inactividad
+$tiempoInactividad = 1800;
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $tiempoInactividad)) {
+    session_unset();
+    session_destroy();
+    header("Location: login.php?timeout=1");
+    exit();
+}
+$_SESSION['last_activity'] = time();
 ?>
 <!DOCTYPE html>
 <html lang="es">

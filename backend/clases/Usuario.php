@@ -104,6 +104,7 @@ abstract class Usuario {
         $_SESSION['usuario'] = $fila['usuario'];
         $_SESSION['rol'] = strtolower($fila['rol']);
         $_SESSION['session_id'] = $nuevaSessionId;
+        $_SESSION['last_activity'] = time(); // RNF-15: Registro de tiempo inicial para inactividad
 
         $redirect = '../../frontend/pages/productos.php';
 
