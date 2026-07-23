@@ -247,99 +247,77 @@ class Producto {
     ): bool {
         $id = intval($id);
 
-        $sqlSolicitudes = "
-            SELECT COUNT(*) AS total
-            FROM detalle_solicitud ds
-            INNER JOIN solicitudes_compra sc
-                ON ds.id_solicitud = sc.id_solicitud
-            WHERE ds.id_producto = ?
-              AND sc.estado = 'Pendiente'
-        ";
+        try {
+            // Verificar si la tabla de solicitudes existe en la BD actual
+            $checkSol = $conexion->query("SHOW TABLES LIKE 'detalle_solicitud'");
+            if ($checkSol && $checkSol->num_rows > 0) {
+                $sqlSolicitudes = "
+                    SELECT COUNT(*) AS total
+                    FROM detalle_solicitud ds
+                    INNER JOIN solicitudes_compra sc
+                        ON ds.id_solicitud = sc.id_solicitud
+                    WHERE ds.id_producto = ?
+                      AND sc.estado = 'Pendiente'
+                ";
 
-        $stmtSol = $conexion->prepare($sqlSolicitudes);
+                $stmtSol = $conexion->prepare($sqlSolicitudes);
+                if ($stmtSol) {
+                    if ($stmtSol->bind_param("i", $id) && $stmtSol->execute()) {
+                        $resSol = $stmtSol->get_result();
+                        if ($resSol) {
+                            $rowSol = $resSol->fetch_assoc();
+                            $totalSol = $rowSol ? (int)$rowSol['total'] : 0;
+                            $resSol->free();
+                            $stmtSol->close();
+                            if ($totalSol > 0) {
+                                return true;
+                            }
+                        } else {
+                            $stmtSol->close();
+                        }
+                    } else {
+                        $stmtSol->close();
+                    }
+                }
+            }
 
-        if (!$stmtSol) {
-            throw new Exception(
-                "Error al preparar la consulta de solicitudes de compra pendientes."
-            );
+            // Verificar si la tabla de informes existe en la BD actual
+            $checkInf = $conexion->query("SHOW TABLES LIKE 'detalle_informe'");
+            if ($checkInf && $checkInf->num_rows > 0) {
+                $sqlInformes = "
+                    SELECT COUNT(*) AS total
+                    FROM detalle_informe di
+                    INNER JOIN informe_recepcion ir
+                        ON di.id_informe = ir.id_informe
+                    WHERE di.id_producto = ?
+                      AND ir.estado = 'Pendiente'
+                ";
+
+                $stmtInf = $conexion->prepare($sqlInformes);
+                if ($stmtInf) {
+                    if ($stmtInf->bind_param("i", $id) && $stmtInf->execute()) {
+                        $resInf = $stmtInf->get_result();
+                        if ($resInf) {
+                            $rowInf = $resInf->fetch_assoc();
+                            $totalInf = $rowInf ? (int)$rowInf['total'] : 0;
+                            $resInf->free();
+                            $stmtInf->close();
+                            if ($totalInf > 0) {
+                                return true;
+                            }
+                        } else {
+                            $stmtInf->close();
+                        }
+                    } else {
+                        $stmtInf->close();
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            return false;
         }
 
-        if (
-            !$stmtSol->bind_param("i", $id) ||
-            !$stmtSol->execute()
-        ) {
-            $stmtSol->close();
-
-            throw new Exception(
-                "Error al ejecutar la consulta de solicitudes de compra pendientes."
-            );
-        }
-
-        $resSol = $stmtSol->get_result();
-
-        if (!$resSol) {
-            $stmtSol->close();
-
-            throw new Exception(
-                "Error al obtener resultados de solicitudes de compra pendientes."
-            );
-        }
-
-        $rowSol = $resSol->fetch_assoc();
-        $totalSol = $rowSol ? (int)$rowSol['total'] : 0;
-
-        $resSol->free();
-        $stmtSol->close();
-
-        if ($totalSol > 0) {
-            return true;
-        }
-
-        $sqlInformes = "
-            SELECT COUNT(*) AS total
-            FROM detalle_informe di
-            INNER JOIN informe_recepcion ir
-                ON di.id_informe = ir.id_informe
-            WHERE di.id_producto = ?
-              AND ir.estado = 'Pendiente'
-        ";
-
-        $stmtInf = $conexion->prepare($sqlInformes);
-
-        if (!$stmtInf) {
-            throw new Exception(
-                "Error al preparar la consulta de informes de recepción pendientes."
-            );
-        }
-
-        if (
-            !$stmtInf->bind_param("i", $id) ||
-            !$stmtInf->execute()
-        ) {
-            $stmtInf->close();
-
-            throw new Exception(
-                "Error al ejecutar la consulta de informes de recepción pendientes."
-            );
-        }
-
-        $resInf = $stmtInf->get_result();
-
-        if (!$resInf) {
-            $stmtInf->close();
-
-            throw new Exception(
-                "Error al obtener resultados de informes de recepción pendientes."
-            );
-        }
-
-        $rowInf = $resInf->fetch_assoc();
-        $totalInf = $rowInf ? (int)$rowInf['total'] : 0;
-
-        $resInf->free();
-        $stmtInf->close();
-
-        return $totalInf > 0;
+        return false;
     }
 
     public static function modificarProducto(

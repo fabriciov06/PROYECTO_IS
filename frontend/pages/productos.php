@@ -4,6 +4,16 @@ if (!isset($_SESSION['usuario_logeado'])) {
     header("Location: login.php");
     exit();
 }
+
+// RNF-15: Cierre de sesión automático tras 30 minutos (1800 segundos) de inactividad
+$tiempoInactividad = 1800;
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $tiempoInactividad)) {
+    session_unset();
+    session_destroy();
+    header("Location: login.php?timeout=1");
+    exit();
+}
+$_SESSION['last_activity'] = time();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -80,8 +90,8 @@ if (!isset($_SESSION['usuario_logeado'])) {
         .form-group label { display: block; margin-bottom: 6px; color: #4B5563; font-weight: 600; font-size: 13px; }
         .form-group label span.req { color: #EF4444; font-weight: 700; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border: 1px solid #D1D5DB; border-radius: 8px; box-sizing: border-box; font-family: 'Inter'; font-size: 14px; outline: none; background: #F9FAFB; }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #0F1B2D; background: white; box-shadow: 0 0 0 3px rgba(15,27,45,0.1); }
-        .form-group input.input-error, .form-group select.input-error { border-color: #EF4444; background: #FEF2F2; }
+        .form-group input.input-error, .form-group select.input-error, .form-group textarea.input-error { border-color: #EF4444 !important; background: #FEF2F2 !important; box-shadow: 0 0 0 3px rgba(239,68,68,0.2) !important; }
+        .field-error-text { color: #DC2626; font-size: 12px; font-weight: 600; margin-top: 4px; display: none; }
         
         /* INDICADOR DE DISPONIBILIDAD DE CÓDIGO */
         .status-indicator { display: block; font-size: 12px; font-weight: 600; margin-top: 4px; }
@@ -194,6 +204,7 @@ if (!isset($_SESSION['usuario_logeado'])) {
                     <div class="form-group full-width">
                         <label>Nombre del Producto <span class="req">*</span></label>
                         <input type="text" id="add_nombre" name="nombre" placeholder="Ej: Leche Gloria Evaporada 400g" required>
+                        <div id="err_add_nombre" class="field-error-text"></div>
                     </div>
 
                     <div class="form-group">
@@ -201,6 +212,7 @@ if (!isset($_SESSION['usuario_logeado'])) {
                         <select id="add_categoria" name="categoria" required>
                             <option value="">Cargando categorías...</option>
                         </select>
+                        <div id="err_add_categoria" class="field-error-text"></div>
                     </div>
 
                     <div class="form-group">
@@ -210,21 +222,25 @@ if (!isset($_SESSION['usuario_logeado'])) {
                             <option value="paquete">Paquete</option>
                             <option value="caja">Caja</option>
                         </select>
+                        <div id="err_add_unidad_medida" class="field-error-text"></div>
                     </div>
 
                     <div class="form-group">
                         <label>Precio Unitario (S/) <span class="req">*</span></label>
-                        <input type="number" id="add_precio" name="precio" step="0.01" min="0.01" placeholder="0.00" required oninput="if(this.value < 0) this.value = ''">
+                        <input type="number" id="add_precio" name="precio" step="0.01" placeholder="0.00" required>
+                        <div id="err_add_precio" class="field-error-text"></div>
                     </div>
 
                     <div class="form-group">
                         <label>Stock Inicial <span class="req">*</span></label>
-                        <input type="number" id="add_stock" name="stock" value="0" min="0" required oninput="if(this.value < 0) this.value = 0">
+                        <input type="number" id="add_stock" name="stock" value="0" required>
+                        <div id="err_add_stock" class="field-error-text"></div>
                     </div>
 
                     <div class="form-group full-width">
                         <label>Stock Mínimo Alerta <span class="req">*</span></label>
-                        <input type="number" id="add_stock_minimo" name="stock_minimo" value="0" min="0" required oninput="if(this.value < 0) this.value = 0">
+                        <input type="number" id="add_stock_minimo" name="stock_minimo" value="0" required>
+                        <div id="err_add_stock_minimo" class="field-error-text"></div>
                     </div>
 
                     <div class="form-group full-width">
@@ -303,15 +319,15 @@ if (!isset($_SESSION['usuario_logeado'])) {
                     </div>
                     <div class="form-group">
                         <label>Precio Unitario (S/) <span class="req">*</span></label>
-                        <input type="number" id="edit_precio" name="precio" step="0.01" min="0.01" placeholder="0.00" required oninput="if(this.value < 0) this.value = ''">
+                        <input type="number" id="edit_precio" name="precio" step="0.01" placeholder="0.00" required>
                     </div>
                     <div class="form-group">
                         <label>Stock Actual <span class="req">*</span></label>
-                        <input type="number" id="edit_stock" name="stock" min="0" required oninput="if(this.value < 0) this.value = 0">
+                        <input type="number" id="edit_stock" name="stock" required>
                     </div>
                     <div class="form-group full-width">
                         <label>Stock Mínimo <span class="req">*</span></label>
-                        <input type="number" id="edit_stock_minimo" name="stock_minimo" min="0" required oninput="if(this.value < 0) this.value = 0">
+                        <input type="number" id="edit_stock_minimo" name="stock_minimo" required>
                     </div>
                     <div class="form-group full-width">
                         <label>Descripción Adicional</label>
@@ -458,12 +474,12 @@ if (!isset($_SESSION['usuario_logeado'])) {
                         <label>Precio Mín. (S/)</label>
                         <input type="text" id="precioMin" inputmode="decimal" placeholder="0.00" autocomplete="off">
                         <!-- Espacio siempre reservado: el layout no se mueve al aparecer/desaparecer -->
-                        <span id="errorPrecioMin" class="status-indicator status-invalid" style="visibility: hidden; min-height: 18px; white-space: nowrap;">Solo números</span>
+                        <span id="errorPrecioMin" class="status-indicator status-invalid" style="visibility: hidden; min-height: 18px; white-space: nowrap;">Solo números (máx. 2 decimales)</span>
                     </div>
                     <div class="form-group" style="flex: 1; margin-bottom: 5px;">
                         <label>Precio Máx. (S/)</label>
                         <input type="text" id="precioMax" inputmode="decimal" placeholder="0.00" autocomplete="off">
-                        <span id="errorPrecioMax" class="status-indicator status-invalid" style="visibility: hidden; min-height: 18px; white-space: nowrap;">Solo números</span>
+                        <span id="errorPrecioMax" class="status-indicator status-invalid" style="visibility: hidden; min-height: 18px; white-space: nowrap;">Solo números (máx. 2 decimales)</span>
                     </div>
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
@@ -731,68 +747,131 @@ let desactivacionEnCurso = false;
                 });
         };
 
+        function limpiarErroresAgregar() {
+            alertError.style.display = "none";
+            ['add_codigo', 'add_nombre', 'add_categoria', 'add_unidad_medida', 'add_precio', 'add_stock', 'add_stock_minimo'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('input-error');
+            });
+            ['err_add_nombre', 'err_add_categoria', 'err_add_unidad_medida', 'err_add_precio', 'err_add_stock', 'err_add_stock_minimo'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) { el.innerText = ''; el.style.display = 'none'; }
+            });
+        }
+
+        function mostrarErrorCampoAgregar(inputId, errId, mensaje) {
+            limpiarErroresAgregar();
+            const el = document.getElementById(inputId);
+            if (el) {
+                el.classList.add('input-error');
+                el.focus();
+            }
+            if (errId === 'indicatorCodigo') {
+                indicatorCodigo.innerText = '✕ ' + mensaje;
+                indicatorCodigo.className = 'status-indicator status-invalid';
+            } else {
+                const errEl = document.getElementById(errId);
+                if (errEl) {
+                    errEl.innerText = mensaje;
+                    errEl.style.display = 'block';
+                }
+            }
+        }
+
         // Pre-guardar Agregar Producto
         document.getElementById("btnPreGuardar").onclick = function() {
-            alertError.style.display = "none";
-            const cod = inputCodigo.value.trim();
-            const nom = document.getElementById("add_nombre").value.trim();
-            const cat = document.getElementById("add_categoria").value;
-            const unidad = document.getElementById("add_unidad_medida").value;
-            const precVal = document.getElementById("add_precio").value;
-            const stockVal = document.getElementById("add_stock").value;
-            const stockMinVal = document.getElementById("add_stock_minimo").value;
+            limpiarErroresAgregar();
 
+            const inputCodEl = document.getElementById("add_codigo");
+            const inputNomEl = document.getElementById("add_nombre");
+            const inputCatEl = document.getElementById("add_categoria");
+            const inputUniEl = document.getElementById("add_unidad_medida");
+            const inputPrecEl = document.getElementById("add_precio");
+            const inputStockEl = document.getElementById("add_stock");
+            const inputStockMinEl = document.getElementById("add_stock_minimo");
+
+            const cod = inputCodEl ? inputCodEl.value.trim() : '';
+            const nom = inputNomEl ? inputNomEl.value.trim() : '';
+            const cat = inputCatEl ? inputCatEl.value : '';
+            const unidad = inputUniEl ? inputUniEl.value : '';
+            const precVal = inputPrecEl ? inputPrecEl.value : '';
+            const stockVal = inputStockEl ? inputStockEl.value : '';
+            const stockMinVal = inputStockMinEl ? inputStockMinEl.value : '';
+
+            // Validación de Código
             if (!cod) {
-                alertError.innerText = "El código del producto es obligatorio.";
-                alertError.style.display = "block";
-                inputCodigo.focus();
+                mostrarErrorCampoAgregar('add_codigo', 'indicatorCodigo', 'Este campo es obligatorio.');
                 return;
             }
             if (!codigoValido) {
-                alertError.innerText = indicatorCodigo.innerText.replace('✕ ', '').replace('⚠ ', '') || "Verifique el código del producto.";
-                alertError.style.display = "block";
-                inputCodigo.focus();
+                const msgError = indicatorCodigo.innerText.replace('✕ ', '').replace('⚠ ', '') || "Código inválido o no disponible.";
+                mostrarErrorCampoAgregar('add_codigo', 'indicatorCodigo', msgError);
                 return;
             }
-            if (!nom || nom.length < 3) {
-                alertError.innerText = "El nombre del producto debe tener al menos 3 caracteres.";
-                alertError.style.display = "block";
-                document.getElementById("add_nombre").focus();
+
+            // Flujo 6.1: Nombre obligatorio
+            if (!nom) {
+                mostrarErrorCampoAgregar('add_nombre', 'err_add_nombre', 'Este campo es obligatorio.');
                 return;
             }
+
+            // Flujo 6.4: Nombre muy corto
+            if (nom.length < 3) {
+                mostrarErrorCampoAgregar('add_nombre', 'err_add_nombre', 'El nombre del producto debe tener al menos 3 caracteres.');
+                return;
+            }
+
+            // Flujo 6.1: Categoría obligatoria
             if (!cat) {
-                alertError.innerText = "Debe seleccionar una categoría obligatoria para el producto.";
-                alertError.style.display = "block";
-                document.getElementById("add_categoria").focus();
+                mostrarErrorCampoAgregar('add_categoria', 'err_add_categoria', 'Este campo es obligatorio.');
                 return;
             }
+
+            // Flujo 6.1: Presentación obligatoria
             if (!unidad) {
-                alertError.innerText = "Debe seleccionar una presentación para el producto.";
-                alertError.style.display = "block";
-                document.getElementById("add_unidad_medida").focus();
+                mostrarErrorCampoAgregar('add_unidad_medida', 'err_add_unidad_medida', 'Este campo es obligatorio.');
                 return;
             }
+
+            // Flujo 6.2: Precio inválido
             if (precVal === "" || isNaN(parseFloat(precVal)) || parseFloat(precVal) <= 0) {
-                alertError.innerText = "El precio unitario debe ser un valor numérico mayor a S/ 0.00.";
-                alertError.style.display = "block";
-                document.getElementById("add_precio").focus();
+                mostrarErrorCampoAgregar('add_precio', 'err_add_precio', 'El precio debe ser mayor a cero.');
                 return;
             }
+
+            // Flujo 6.3: Stock inicial inválido
             if (stockVal === "" || isNaN(parseInt(stockVal)) || parseInt(stockVal) < 0) {
-                alertError.innerText = "El stock inicial no puede ser un valor negativo.";
-                alertError.style.display = "block";
-                document.getElementById("add_stock").focus();
+                mostrarErrorCampoAgregar('add_stock', 'err_add_stock', 'El stock no puede ser negativo.');
                 return;
             }
+
+            // Flujo 6.3: Stock mínimo alerta inválido
             if (stockMinVal === "" || isNaN(parseInt(stockMinVal)) || parseInt(stockMinVal) < 0) {
-                alertError.innerText = "El stock mínimo no puede ser un valor negativo.";
-                alertError.style.display = "block";
-                document.getElementById("add_stock_minimo").focus();
+                mostrarErrorCampoAgregar('add_stock_minimo', 'err_add_stock_minimo', 'El stock no puede ser negativo.');
                 return;
             }
 
             document.getElementById("modalConfirmacionGuardar").style.display = "flex";
         };
+
+        // Quitar resaltados de error dinámicamente al escribir en modal Agregar
+        ['inputCodigo', 'add_nombre', 'add_categoria', 'add_unidad_medida', 'add_precio', 'add_stock', 'add_stock_minimo'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', function() {
+                    this.classList.remove('input-error');
+                    alertError.style.display = 'none';
+                    const errEl = document.getElementById('err_' + id);
+                    if (errEl) { errEl.innerText = ''; errEl.style.display = 'none'; }
+                });
+                el.addEventListener('change', function() {
+                    this.classList.remove('input-error');
+                    alertError.style.display = 'none';
+                    const errEl = document.getElementById('err_' + id);
+                    if (errEl) { errEl.innerText = ''; errEl.style.display = 'none'; }
+                });
+            }
+        });
 
         // Ejecutar Guardar Producto
         document.getElementById("btnEjecutarGuardar").onclick = function() {
