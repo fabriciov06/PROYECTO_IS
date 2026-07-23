@@ -231,19 +231,19 @@ $_SESSION['last_activity'] = time();
 
                     <div class="form-group">
                         <label>Precio Unitario (S/) <span class="req">*</span></label>
-                        <input type="number" id="add_precio" name="precio" step="0.01" min="0.01" placeholder="0.00" required oninput="if(this.value < 0) this.value = ''">
+                        <input type="number" id="add_precio" name="precio" step="0.01" placeholder="0.00" required>
                         <div id="err_add_precio" class="field-error-text"></div>
                     </div>
 
                     <div class="form-group">
                         <label>Stock Inicial <span class="req">*</span></label>
-                        <input type="number" id="add_stock" name="stock" value="0" min="0" required oninput="if(this.value < 0) this.value = 0">
+                        <input type="number" id="add_stock" name="stock" value="0" required>
                         <div id="err_add_stock" class="field-error-text"></div>
                     </div>
 
                     <div class="form-group full-width">
                         <label>Stock Mínimo Alerta <span class="req">*</span></label>
-                        <input type="number" id="add_stock_minimo" name="stock_minimo" value="0" min="0" required oninput="if(this.value < 0) this.value = 0">
+                        <input type="number" id="add_stock_minimo" name="stock_minimo" value="0" required>
                         <div id="err_add_stock_minimo" class="field-error-text"></div>
                     </div>
 
@@ -327,15 +327,15 @@ $_SESSION['last_activity'] = time();
                     </div>
                     <div class="form-group">
                         <label>Precio Unitario (S/) <span class="req">*</span></label>
-                        <input type="number" id="edit_precio" name="precio" step="0.01" min="0.01" placeholder="0.00" required oninput="if(this.value < 0) this.value = ''">
+                        <input type="number" id="edit_precio" name="precio" step="0.01" placeholder="0.00" required>
                     </div>
                     <div class="form-group">
                         <label>Stock Actual <span class="req">*</span></label>
-                        <input type="number" id="edit_stock" name="stock" min="0" required oninput="if(this.value < 0) this.value = 0">
+                        <input type="number" id="edit_stock" name="stock" required>
                     </div>
                     <div class="form-group full-width">
                         <label>Stock Mínimo <span class="req">*</span></label>
-                        <input type="number" id="edit_stock_minimo" name="stock_minimo" min="0" required oninput="if(this.value < 0) this.value = 0">
+                        <input type="number" id="edit_stock_minimo" name="stock_minimo" required>
                     </div>
                     <div class="form-group full-width">
                         <label>Descripción Adicional</label>
@@ -757,7 +757,7 @@ let desactivacionEnCurso = false;
 
         function limpiarErroresAgregar() {
             alertError.style.display = "none";
-            ['inputCodigo', 'add_nombre', 'add_categoria', 'add_unidad_medida', 'add_precio', 'add_stock', 'add_stock_minimo'].forEach(id => {
+            ['add_codigo', 'add_nombre', 'add_categoria', 'add_unidad_medida', 'add_precio', 'add_stock', 'add_stock_minimo'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.remove('input-error');
             });
@@ -770,14 +770,19 @@ let desactivacionEnCurso = false;
         function mostrarErrorCampoAgregar(inputId, errId, mensaje) {
             limpiarErroresAgregar();
             const el = document.getElementById(inputId);
-            const errEl = document.getElementById(errId);
             if (el) {
                 el.classList.add('input-error');
                 el.focus();
             }
-            if (errEl) {
-                errEl.innerText = mensaje;
-                errEl.style.display = 'block';
+            if (errId === 'indicatorCodigo') {
+                indicatorCodigo.innerText = '✕ ' + mensaje;
+                indicatorCodigo.className = 'status-indicator status-invalid';
+            } else {
+                const errEl = document.getElementById(errId);
+                if (errEl) {
+                    errEl.innerText = mensaje;
+                    errEl.style.display = 'block';
+                }
             }
         }
 
@@ -785,7 +790,7 @@ let desactivacionEnCurso = false;
         document.getElementById("btnPreGuardar").onclick = function() {
             limpiarErroresAgregar();
 
-            const inputCodEl = document.getElementById("inputCodigo");
+            const inputCodEl = document.getElementById("add_codigo");
             const inputNomEl = document.getElementById("add_nombre");
             const inputCatEl = document.getElementById("add_categoria");
             const inputUniEl = document.getElementById("add_unidad_medida");
@@ -801,18 +806,14 @@ let desactivacionEnCurso = false;
             const stockVal = inputStockEl ? inputStockEl.value : '';
             const stockMinVal = inputStockMinEl ? inputStockMinEl.value : '';
 
+            // Validación de Código
             if (!cod) {
-                if (inputCodEl) inputCodEl.classList.add('input-error');
-                alertError.innerText = "Este campo es obligatorio.";
-                alertError.style.display = "block";
-                if (inputCodEl) inputCodEl.focus();
+                mostrarErrorCampoAgregar('add_codigo', 'indicatorCodigo', 'Este campo es obligatorio.');
                 return;
             }
             if (!codigoValido) {
-                if (inputCodEl) inputCodEl.classList.add('input-error');
-                alertError.innerText = indicatorCodigo.innerText.replace('✕ ', '').replace('⚠ ', '') || "Verifique el código del producto.";
-                alertError.style.display = "block";
-                if (inputCodEl) inputCodEl.focus();
+                const msgError = indicatorCodigo.innerText.replace('✕ ', '').replace('⚠ ', '') || "Código inválido o no disponible.";
+                mostrarErrorCampoAgregar('add_codigo', 'indicatorCodigo', msgError);
                 return;
             }
 
