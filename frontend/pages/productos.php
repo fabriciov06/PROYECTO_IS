@@ -204,13 +204,9 @@ if (!isset($_SESSION['usuario_logeado'])) {
                     </div>
 
                     <div class="form-group">
-                        <label>Unidad de Medida <span class="req">*</span></label>
+                        <label>Presentación <span class="req">*</span></label>
                         <select id="add_unidad_medida" name="unidad_medida" required>
-                            <option value="unidad">Unidad</option>
-                            <option value="kg">Kilogramo (kg)</option>
-                            <option value="g">Gramo (g)</option>
-                            <option value="litro">Litro (L)</option>
-                            <option value="ml">Mililitro (ml)</option>
+                            <option value="unidad" selected>Unidad</option>
                             <option value="paquete">Paquete</option>
                             <option value="caja">Caja</option>
                         </select>
@@ -298,13 +294,9 @@ if (!isset($_SESSION['usuario_logeado'])) {
                         <select id="edit_categoria" name="categoria" required></select>
                     </div>
                     <div class="form-group">
-                        <label>Unidad de Medida <span class="req">*</span></label>
+                        <label>Presentación <span class="req">*</span></label>
                         <select id="edit_unidad_medida" name="unidad_medida" required>
-                            <option value="unidad">Unidad</option>
-                            <option value="kg">Kilogramo (kg)</option>
-                            <option value="g">Gramo (g)</option>
-                            <option value="litro">Litro (L)</option>
-                            <option value="ml">Mililitro (ml)</option>
+                            <option value="unidad" selected>Unidad</option>
                             <option value="paquete">Paquete</option>
                             <option value="caja">Caja</option>
                         </select>
@@ -775,7 +767,7 @@ let desactivacionEnCurso = false;
                 return;
             }
             if (!unidad) {
-                alertError.innerText = "Debe seleccionar una unidad de medida para el producto.";
+                alertError.innerText = "Debe seleccionar una presentación para el producto.";
                 alertError.style.display = "block";
                 document.getElementById("add_unidad_medida").focus();
                 return;
