@@ -53,7 +53,9 @@ CREATE TABLE usuarios (
     contrasenia VARCHAR(255) NOT NULL,
     telefono VARCHAR(20) DEFAULT '',
     rol ENUM('administrador', 'supervisor', 'operador', 'proveedor') NOT NULL,
-    estado TINYINT(1) DEFAULT 1
+    estado VARCHAR(20) DEFAULT 'Activo',
+    intentos_fallidos INT DEFAULT 0,
+    session_id VARCHAR(255) NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE administradores (

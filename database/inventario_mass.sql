@@ -39,7 +39,10 @@ CREATE TABLE usuarios (
     nombre VARCHAR(100) NOT NULL,
     usuario VARCHAR(50) NOT NULL UNIQUE,
     contrasenia VARCHAR(255) NOT NULL,
-    rol VARCHAR(30) NOT NULL
+    rol VARCHAR(30) NOT NULL,
+    estado VARCHAR(20) DEFAULT 'Activo',
+    intentos_fallidos INT DEFAULT 0,
+    session_id VARCHAR(255) NULL
 ) ENGINE=InnoDB;
 
 -- Tabla de Productos (Catálogo)
