@@ -145,6 +145,9 @@ if (!isset($_SESSION['usuario_logeado'])) {
                     <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; top: 12px; color: #9CA3AF;"></i>
                     <input type="text" id="inputBuscar" placeholder="Buscar por nombre o código..." style="padding-left: 40px;">
                 </div>
+                <button class="btn-filter" onclick="actualizarTabla(); mostrarToast('Listado actualizado.');" title="Actualizar datos del listado">
+                    <i class="fa-solid fa-rotate-right"></i> Refrescar
+                </button>
                 <button class="btn-filter" onclick="document.getElementById('modalBusqueda').style.display = 'flex'">
                     <i class="fa-solid fa-sliders"></i> Filtros
                 </button>
