@@ -1,12 +1,47 @@
 <?php
+session_start();
 require_once 'conexion.php';
 require_once '../clases/autoload.php';
 
+// 1. VALIDAR SESIÓN (el endpoint responde filas HTML, no JSON)
+if (empty($_SESSION['usuario_logeado'])) {
+    http_response_code(401);
+    echo "<tr><td colspan='8' style='text-align: center; padding: 40px; color: #9B1C1C;'>Debe iniciar sesión para consultar el catálogo.</td></tr>";
+    exit();
+}
+
+// 2. VALIDAR PERMISOS DE ADMINISTRADOR
+if (empty($_SESSION['rol']) || strtolower(trim((string)$_SESSION['rol'])) !== RolUsuario::ADMINISTRADOR) {
+    http_response_code(403);
+    echo "<tr><td colspan='8' style='text-align: center; padding: 40px; color: #9B1C1C;'>No tiene permisos suficientes para consultar el catálogo.</td></tr>";
+    exit();
+}
+
+// 3. SANITIZAR ENTRADAS (nunca confiar en el frontend)
 $q = $_GET['q'] ?? '';
-$f = $_GET['f'] ?? 'Todos';
-$min = $_GET['min'] ?? '';
-$max = $_GET['max'] ?? '';
-$cat = $_GET['cat'] ?? '';
+$f = trim($_GET['f'] ?? 'Todos');
+$min = trim($_GET['min'] ?? '');
+$max = trim($_GET['max'] ?? '');
+$cat = trim($_GET['cat'] ?? '');
+
+// Estado de stock: solo valores conocidos; cualquier otro se trata como 'Todos'
+$estadosValidos = ['Todos', 'Normal', 'Stock Bajo', 'Agotado', 'Agotados'];
+if (!in_array($f, $estadosValidos, true)) {
+    $f = 'Todos';
+}
+
+// Precios: descartar valores no numéricos o negativos
+if ($min !== '' && (!is_numeric($min) || floatval($min) < 0)) {
+    $min = '';
+}
+if ($max !== '' && (!is_numeric($max) || floatval($max) < 0)) {
+    $max = '';
+}
+// Coherencia mín/máx: si mín > máx, descartar el par (el frontend ya lo bloquea antes)
+if ($min !== '' && $max !== '' && floatval($min) > floatval($max)) {
+    $min = '';
+    $max = '';
+}
 
 $productos = Producto::buscar($conexion, $q, $f, $min, $max, $cat);
 

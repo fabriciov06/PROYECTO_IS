@@ -38,12 +38,8 @@ if (!isset($_SESSION['usuario_logeado'])) {
         .avatar { background: #0F1B2D; color: #FFD100; font-weight: 700; font-size: 13px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
 
         /* PANEL DE CONTROLES */
-        .controls-panel { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #E5E7EB; }
-        .filters { display: flex; gap: 10px; }
-        .filter-chip { padding: 8px 18px; background: #F3F4F6; color: #4B5563; border-radius: 50px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
-        .filter-chip:hover { background: #E5E7EB; }
-        .filter-chip.active { background: #FFF9D6; color: #0F1B2D; border-color: #FFD100; }
-        
+        .controls-panel { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 25px; display: flex; justify-content: flex-end; align-items: center; border: 1px solid #E5E7EB; }
+
         .search-actions { display: flex; gap: 12px; align-items: center; }
         #inputBuscar { padding: 10px 16px; border: 1px solid #D1D5DB; border-radius: 8px; outline: none; width: 260px; font-family: 'Inter'; font-size: 14px; transition: 0.3s; }
         #inputBuscar:focus { border-color: #0F1B2D; box-shadow: 0 0 0 3px rgba(15,27,45,0.1); }
@@ -135,11 +131,6 @@ if (!isset($_SESSION['usuario_logeado'])) {
         </div>
 
         <div class="controls-panel">
-            <div class="filters">
-                <span class="filter-chip active">Todos</span>
-                <span class="filter-chip">Stock Bajo</span>
-                <span class="filter-chip">Agotados</span>
-            </div>
             <div class="search-actions">
                 <div style="position: relative;">
                     <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; top: 12px; color: #9CA3AF;"></i>
@@ -148,7 +139,7 @@ if (!isset($_SESSION['usuario_logeado'])) {
                 <button class="btn-filter" onclick="actualizarTabla(); mostrarToast('Listado actualizado.');" title="Actualizar datos del listado">
                     <i class="fa-solid fa-rotate-right"></i> Refrescar
                 </button>
-                <button class="btn-filter" onclick="document.getElementById('modalBusqueda').style.display = 'flex'">
+                <button class="btn-filter" onclick="abrirModalFiltros()">
                     <i class="fa-solid fa-sliders"></i> Filtros
                 </button>
                 <button class="add-btn" id="btnAbrirModal" title="Atajo: Alt + N">
@@ -462,6 +453,7 @@ if (!isset($_SESSION['usuario_logeado'])) {
         <div class="modal-content" style="max-width: 450px;">
             <span class="close-btn" id="btnCerrarBusqueda">&times;</span>
             <h2><i class="fa-solid fa-sliders" style="margin-right: 8px;"></i> Filtros Avanzados</h2>
+
             <form id="formBusquedaAvanzada">
                 <div class="form-group">
                     <label>Categoría</label>
@@ -470,16 +462,30 @@ if (!isset($_SESSION['usuario_logeado'])) {
                     </select>
                 </div>
                 <div style="display: flex; gap: 15px;">
-                    <div class="form-group" style="flex: 1;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 5px;">
                         <label>Precio Mín. (S/)</label>
-                        <input type="number" id="precioMin" step="0.10" min="0" placeholder="0.00">
+                        <input type="text" id="precioMin" inputmode="decimal" placeholder="0.00" autocomplete="off">
+                        <!-- Espacio siempre reservado: el layout no se mueve al aparecer/desaparecer -->
+                        <span id="errorPrecioMin" class="status-indicator status-invalid" style="visibility: hidden; min-height: 18px; white-space: nowrap;">Solo números</span>
                     </div>
-                    <div class="form-group" style="flex: 1;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 5px;">
                         <label>Precio Máx. (S/)</label>
-                        <input type="number" id="precioMax" step="0.10" min="0" placeholder="0.00">
+                        <input type="text" id="precioMax" inputmode="decimal" placeholder="0.00" autocomplete="off">
+                        <span id="errorPrecioMax" class="status-indicator status-invalid" style="visibility: hidden; min-height: 18px; white-space: nowrap;">Solo números</span>
                     </div>
                 </div>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Estado de stock</label>
+                    <select id="estadoStockBusqueda">
+                        <option value="Todos">Todos</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Stock Bajo">Stock Bajo</option>
+                        <option value="Agotado">Agotado</option>
+                    </select>
+                </div>
+                <!-- Mensaje general (mín > máx): texto simple con espacio siempre reservado; hace de separación ante los botones -->
+                <span id="alertErrorFiltros" class="status-indicator status-invalid" style="visibility: hidden; min-height: 18px; white-space: nowrap;">El mínimo no puede superar al máximo</span>
+                <div style="display: flex; gap: 10px; margin-top: 4px;">
                     <button type="button" class="btn-save" style="flex: 1;" onclick="aplicarFiltrosAvanzados()"><i class="fa-solid fa-filter"></i> Aplicar</button>
                     <button type="button" class="btn-cancel" style="flex: 1;" onclick="limpiarFiltrosCatalogo()"><i class="fa-solid fa-eraser"></i> Limpiar</button>
                 </div>
@@ -560,9 +566,14 @@ let desactivacionEnCurso = false;
                     console.error('Error cargando categorías:', err);
                     const defaultCats = ['Abarrotes', 'Bebidas', 'Cuidado Personal', 'Embutidos', 'Lácteos', 'Limpieza', 'Panadería', 'Snacks'];
                     let options = '<option value="">Seleccione categoría...</option>';
-                    defaultCats.forEach(c => { options += `<option value="${c}">${c}</option>`; });
+                    let filterOptions = '<option value="">Todas las categorías</option>';
+                    defaultCats.forEach(c => {
+                        options += `<option value="${c}">${c}</option>`;
+                        filterOptions += `<option value="${c}">${c}</option>`;
+                    });
                     document.getElementById('add_categoria').innerHTML = options;
                     document.getElementById('edit_categoria').innerHTML = options;
+                    document.getElementById('categoriaBusqueda').innerHTML = filterOptions;
                 });
         }
 
@@ -1174,7 +1185,6 @@ btnEjecutarDesactivar.onclick = async function () {
 };
         // BÚSQUEDA Y FILTRADO
         const inputBuscar = document.getElementById('inputBuscar');
-        const filtros = document.querySelectorAll('.filter-chip');
         let filtroActual = 'Todos';
 
         function actualizarTabla() {
@@ -1188,34 +1198,185 @@ btnEjecutarDesactivar.onclick = async function () {
                 .then(html => document.getElementById('tablaProductos').innerHTML = html);
         }
 
+        // ========================================================
+        // CU-4: FILTROS AVANZADOS (Categoría, Precio, Estado de stock)
+        // ========================================================
+        const precioMinInput = document.getElementById('precioMin');
+        const precioMaxInput = document.getElementById('precioMax');
+        const errorPrecioMin = document.getElementById('errorPrecioMin');
+        const errorPrecioMax = document.getElementById('errorPrecioMax');
+        const alertErrorFiltros = document.getElementById('alertErrorFiltros');
+
+        // Sanea un valor de precio: solo dígitos, un separador decimal (coma → punto),
+        // máximo 2 decimales, sin negativos; ignora espacios al inicio y final.
+        function sanearValorPrecio(valor) {
+            let v = valor.trim().replace(/,/g, '.');
+            let limpio = '';
+            let tienePunto = false;
+            let invalido = false;
+
+            for (const ch of v) {
+                if (ch >= '0' && ch <= '9') {
+                    limpio += ch;
+                } else if (ch === '.' && !tienePunto) {
+                    tienePunto = true;
+                    limpio += ch;
+                } else {
+                    invalido = true; // letra, símbolo, negativo o segundo separador
+                }
+            }
+
+            const punto = limpio.indexOf('.');
+            if (punto !== -1 && limpio.length - punto - 1 > 2) {
+                limpio = limpio.slice(0, punto + 3);
+                invalido = true;
+            }
+
+            return { limpio, invalido };
+        }
+
+        function configurarCampoPrecio(input, errorSpan) {
+            // Bloqueo al teclear: el carácter inválido nunca llega a escribirse
+            input.addEventListener('keydown', function(e) {
+                if (e.ctrlKey || e.metaKey || e.altKey) return;
+                if (e.key.length !== 1) return; // Tab, Backspace, flechas, etc.
+
+                if (e.key === ' ') { // espacios: se ignoran sin mensaje
+                    e.preventDefault();
+                    return;
+                }
+
+                // Valor que quedaría fuera de la selección actual
+                const valorRestante = this.value.slice(0, this.selectionStart) + this.value.slice(this.selectionEnd);
+                const esDigito = e.key >= '0' && e.key <= '9';
+                const esSeparador = (e.key === '.' || e.key === ',') && !valorRestante.includes('.');
+
+                if (esDigito) {
+                    const punto = valorRestante.indexOf('.');
+                    if (punto !== -1 && this.selectionStart > punto && valorRestante.length - punto - 1 >= 2) {
+                        e.preventDefault(); // ya hay 2 decimales
+                        errorSpan.style.visibility = 'visible';
+                        return;
+                    }
+                    errorSpan.style.visibility = 'hidden';
+                    return;
+                }
+
+                if (esSeparador) {
+                    errorSpan.style.visibility = 'hidden';
+                    return;
+                }
+
+                e.preventDefault(); // letras, símbolos, signo menos, segundo separador
+                errorSpan.style.visibility = 'visible';
+            });
+
+            // Saneo al modificar el valor (cubre pegado, autocompletado y coma → punto)
+            input.addEventListener('input', function() {
+                const { limpio, invalido } = sanearValorPrecio(this.value);
+                if (this.value !== limpio) {
+                    this.value = limpio;
+                }
+                errorSpan.style.visibility = invalido ? 'visible' : 'hidden';
+                if (!invalido) alertErrorFiltros.style.visibility = 'hidden';
+            });
+        }
+
+        configurarCampoPrecio(precioMinInput, errorPrecioMin);
+        configurarCampoPrecio(precioMaxInput, errorPrecioMax);
+
+        function abrirModalFiltros() {
+            // Los valores aplicados se conservan: el modal solo se oculta, nunca se resetea
+            alertErrorFiltros.style.visibility = 'hidden';
+            modalBusq.style.display = 'flex';
+            setTimeout(() => document.getElementById('categoriaBusqueda').focus(), 100);
+        }
+
+        // Navegación con Tab dentro del modal (ciclo de foco)
+        modalBusq.addEventListener('keydown', function(e) {
+            if (e.key !== 'Tab' || modalBusq.style.display !== 'flex') return;
+            const enfocables = modalBusq.querySelectorAll('select, input, button');
+            if (enfocables.length === 0) return;
+            const primero = enfocables[0];
+            const ultimo = enfocables[enfocables.length - 1];
+            if (e.shiftKey && document.activeElement === primero) {
+                e.preventDefault();
+                ultimo.focus();
+            } else if (!e.shiftKey && document.activeElement === ultimo) {
+                e.preventDefault();
+                primero.focus();
+            }
+        });
+
+        // Consulta con indicador de carga y manejo de error de conexión.
+        // (Función propia de CU-4: no altera actualizarTabla(), compartida con otros CU.)
+        function consultarCatalogoFiltrado() {
+            const tbody = document.getElementById('tablaProductos');
+            tbody.innerHTML = "<tr><td colspan='8' style='text-align: center; padding: 40px; color: #6B7280;'><i class='fa-solid fa-spinner fa-spin' style='margin-right: 8px; color: #FFD100;'></i> Cargando resultados...</td></tr>";
+
+            const q = inputBuscar.value;
+            const min = precioMinInput.value.trim();
+            const max = precioMaxInput.value.trim();
+            const cat = document.getElementById('categoriaBusqueda').value;
+
+            fetch(`../../backend/acciones/filtrar_productos.php?q=${encodeURIComponent(q)}&f=${encodeURIComponent(filtroActual)}&min=${encodeURIComponent(min)}&max=${encodeURIComponent(max)}&cat=${encodeURIComponent(cat)}`)
+                .then(res => res.text())
+                .then(html => { tbody.innerHTML = html; })
+                .catch(() => {
+                    tbody.innerHTML = "<tr><td colspan='8' style='text-align: center; padding: 40px; color: #9B1C1C;'>No se pudo consultar el catálogo. Verifique su conexión e intente nuevamente.</td></tr>";
+                    mostrarToast('Error de conexión. Sus criterios de filtro se han conservado.');
+                });
+        }
+
         function aplicarFiltrosAvanzados() {
-            actualizarTabla();
+            alertErrorFiltros.style.visibility = 'hidden';
+
+            // Normalizar: quitar espacios y separador decimal incompleto ("12." → "12")
+            let minStr = precioMinInput.value.trim().replace(/\.$/, '');
+            let maxStr = precioMaxInput.value.trim().replace(/\.$/, '');
+            precioMinInput.value = minStr;
+            precioMaxInput.value = maxStr;
+
+            const regexPrecio = /^\d+(\.\d{1,2})?$/;
+            if (minStr !== '' && !regexPrecio.test(minStr)) {
+                errorPrecioMin.style.visibility = 'visible';
+                precioMinInput.focus();
+                return;
+            }
+            if (maxStr !== '' && !regexPrecio.test(maxStr)) {
+                errorPrecioMax.style.visibility = 'visible';
+                precioMaxInput.focus();
+                return;
+            }
+
+            // Funciona con: solo mínimo, solo máximo, ninguno o ambos iguales
+            if (minStr !== '' && maxStr !== '' && parseFloat(minStr) > parseFloat(maxStr)) {
+                alertErrorFiltros.innerText = 'El mínimo no puede superar al máximo';
+                alertErrorFiltros.style.visibility = 'visible';
+                return; // no se ejecuta la consulta
+            }
+
+            filtroActual = document.getElementById('estadoStockBusqueda').value;
             modalBusq.style.display = 'none';
+            consultarCatalogoFiltrado();
         }
 
         function limpiarFiltrosCatalogo() {
-            document.getElementById('precioMin').value = '';
-            document.getElementById('precioMax').value = '';
+            // Resetea los 4 criterios del modal. No toca el buscador por nombre (CU-5).
+            precioMinInput.value = '';
+            precioMaxInput.value = '';
             document.getElementById('categoriaBusqueda').value = '';
-            document.getElementById('inputBuscar').value = '';
-            
-            filtros.forEach(f => f.classList.remove('active'));
-            filtros[0].classList.add('active');
-            filtroActual = 'Todos';
+            document.getElementById('estadoStockBusqueda').value = 'Todos';
+            errorPrecioMin.style.visibility = 'hidden';
+            errorPrecioMax.style.visibility = 'hidden';
+            alertErrorFiltros.style.visibility = 'hidden';
 
-            actualizarTabla();
+            filtroActual = 'Todos';
             modalBusq.style.display = 'none';
+            consultarCatalogoFiltrado();
         }
 
         inputBuscar.addEventListener('input', actualizarTabla);
-        filtros.forEach(chip => {
-            chip.addEventListener('click', () => {
-                filtros.forEach(f => f.classList.remove('active'));
-                chip.classList.add('active');
-                filtroActual = chip.innerText;
-                actualizarTabla();
-            });
-        });
 
         window.onload = function() {
             cargarCategorias();

@@ -103,36 +103,69 @@ class Producto {
 
     public static function buscar(mysqli $conexion, string $q = '', string $f = 'Todos', string $min = '', string $max = '', string $cat = ''): array {
         $sql = "SELECT * FROM productos WHERE (estado != 'Desactivado' OR estado IS NULL)";
+        $tipos = '';
+        $parametros = [];
 
         if ($q != '') {
-            $qEsc = $conexion->real_escape_string($q);
-            $sql .= " AND (nombre LIKE '%$qEsc%' OR codigo LIKE '%$qEsc%')";
+            $sql .= " AND (nombre LIKE ? OR codigo LIKE ?)";
+            $like = '%' . $q . '%';
+            $tipos .= 'ss';
+            $parametros[] = $like;
+            $parametros[] = $like;
         }
+
+        // Estado de stock: misma lógica que el badge de la tabla (CU-4)
         if ($f == 'Stock Bajo') {
             $sql .= " AND stock < stock_minimo AND stock > 0";
-        } elseif ($f == 'Agotados') {
+        } elseif ($f == 'Agotados' || $f == 'Agotado') {
             $sql .= " AND stock <= 0";
+        } elseif ($f == 'Normal') {
+            $sql .= " AND stock >= stock_minimo AND stock > 0";
         }
+
         if ($min != '') {
-            $sql .= " AND precio >= " . floatval($min);
+            $sql .= " AND precio >= ?";
+            $tipos .= 'd';
+            $parametros[] = floatval($min);
         }
         if ($max != '') {
-            $sql .= " AND precio <= " . floatval($max);
+            $sql .= " AND precio <= ?";
+            $tipos .= 'd';
+            $parametros[] = floatval($max);
         }
         if ($cat != '') {
-            $catEsc = $conexion->real_escape_string($cat);
-            $sql .= " AND categoria = '$catEsc'";
+            $sql .= " AND categoria = ?";
+            $tipos .= 's';
+            $parametros[] = $cat;
         }
 
         $sql .= " ORDER BY codigo ASC";
-        $resultado = $conexion->query($sql);
 
         $productos = [];
-        if ($resultado && $resultado->num_rows > 0) {
+        $stmt = $conexion->prepare($sql);
+        if (!$stmt) {
+            return $productos;
+        }
+
+        if ($tipos !== '' && !$stmt->bind_param($tipos, ...$parametros)) {
+            $stmt->close();
+            return $productos;
+        }
+
+        if (!$stmt->execute()) {
+            $stmt->close();
+            return $productos;
+        }
+
+        $resultado = $stmt->get_result();
+        if ($resultado) {
             while ($fila = $resultado->fetch_assoc()) {
                 $productos[] = $fila;
             }
+            $resultado->free();
         }
+        $stmt->close();
+
         return $productos;
     }
 
