@@ -749,68 +749,129 @@ let desactivacionEnCurso = false;
                 });
         };
 
+        function limpiarErroresAgregar() {
+            alertError.style.display = "none";
+            ['inputCodigo', 'add_nombre', 'add_categoria', 'add_unidad_medida', 'add_precio', 'add_stock', 'add_stock_minimo'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('input-error');
+            });
+        }
+
         // Pre-guardar Agregar Producto
         document.getElementById("btnPreGuardar").onclick = function() {
-            alertError.style.display = "none";
-            const cod = inputCodigo.value.trim();
-            const nom = document.getElementById("add_nombre").value.trim();
-            const cat = document.getElementById("add_categoria").value;
-            const unidad = document.getElementById("add_unidad_medida").value;
-            const precVal = document.getElementById("add_precio").value;
-            const stockVal = document.getElementById("add_stock").value;
-            const stockMinVal = document.getElementById("add_stock_minimo").value;
+            limpiarErroresAgregar();
+
+            const inputCodEl = document.getElementById("inputCodigo");
+            const inputNomEl = document.getElementById("add_nombre");
+            const inputCatEl = document.getElementById("add_categoria");
+            const inputUniEl = document.getElementById("add_unidad_medida");
+            const inputPrecEl = document.getElementById("add_precio");
+            const inputStockEl = document.getElementById("add_stock");
+            const inputStockMinEl = document.getElementById("add_stock_minimo");
+
+            const cod = inputCodEl ? inputCodEl.value.trim() : '';
+            const nom = inputNomEl ? inputNomEl.value.trim() : '';
+            const cat = inputCatEl ? inputCatEl.value : '';
+            const unidad = inputUniEl ? inputUniEl.value : '';
+            const precVal = inputPrecEl ? inputPrecEl.value : '';
+            const stockVal = inputStockEl ? inputStockEl.value : '';
+            const stockMinVal = inputStockMinEl ? inputStockMinEl.value : '';
 
             if (!cod) {
-                alertError.innerText = "El código del producto es obligatorio.";
+                if (inputCodEl) inputCodEl.classList.add('input-error');
+                alertError.innerText = "Este campo es obligatorio.";
                 alertError.style.display = "block";
-                inputCodigo.focus();
+                if (inputCodEl) inputCodEl.focus();
                 return;
             }
             if (!codigoValido) {
+                if (inputCodEl) inputCodEl.classList.add('input-error');
                 alertError.innerText = indicatorCodigo.innerText.replace('✕ ', '').replace('⚠ ', '') || "Verifique el código del producto.";
                 alertError.style.display = "block";
-                inputCodigo.focus();
+                if (inputCodEl) inputCodEl.focus();
                 return;
             }
-            if (!nom || nom.length < 3) {
+
+            // Flujo 6.1: Campos obligatorios incompletos
+            if (!nom) {
+                if (inputNomEl) inputNomEl.classList.add('input-error');
+                alertError.innerText = "Este campo es obligatorio.";
+                alertError.style.display = "block";
+                if (inputNomEl) inputNomEl.focus();
+                return;
+            }
+
+            // Flujo 6.4: Nombre muy corto
+            if (nom.length < 3) {
+                if (inputNomEl) inputNomEl.classList.add('input-error');
                 alertError.innerText = "El nombre del producto debe tener al menos 3 caracteres.";
                 alertError.style.display = "block";
-                document.getElementById("add_nombre").focus();
+                if (inputNomEl) inputNomEl.focus();
                 return;
             }
+
+            // Flujo 6.1: Categoría obligatoria
             if (!cat) {
-                alertError.innerText = "Debe seleccionar una categoría obligatoria para el producto.";
+                if (inputCatEl) inputCatEl.classList.add('input-error');
+                alertError.innerText = "Este campo es obligatorio.";
                 alertError.style.display = "block";
-                document.getElementById("add_categoria").focus();
+                if (inputCatEl) inputCatEl.focus();
                 return;
             }
+
+            // Flujo 6.1: Unidad de medida obligatoria
             if (!unidad) {
-                alertError.innerText = "Debe seleccionar una unidad de medida para el producto.";
+                if (inputUniEl) inputUniEl.classList.add('input-error');
+                alertError.innerText = "Este campo es obligatorio.";
                 alertError.style.display = "block";
-                document.getElementById("add_unidad_medida").focus();
+                if (inputUniEl) inputUniEl.focus();
                 return;
             }
+
+            // Flujo 6.2: Precio inválido
             if (precVal === "" || isNaN(parseFloat(precVal)) || parseFloat(precVal) <= 0) {
-                alertError.innerText = "El precio unitario debe ser un valor numérico mayor a S/ 0.00.";
+                if (inputPrecEl) inputPrecEl.classList.add('input-error');
+                alertError.innerText = "El precio debe ser mayor a cero.";
                 alertError.style.display = "block";
-                document.getElementById("add_precio").focus();
+                if (inputPrecEl) inputPrecEl.focus();
                 return;
             }
+
+            // Flujo 6.3: Stock inicial inválido
             if (stockVal === "" || isNaN(parseInt(stockVal)) || parseInt(stockVal) < 0) {
-                alertError.innerText = "El stock inicial no puede ser un valor negativo.";
+                if (inputStockEl) inputStockEl.classList.add('input-error');
+                alertError.innerText = "El stock no puede ser negativo.";
                 alertError.style.display = "block";
-                document.getElementById("add_stock").focus();
+                if (inputStockEl) inputStockEl.focus();
                 return;
             }
+
+            // Flujo 6.3: Stock mínimo alerta inválido
             if (stockMinVal === "" || isNaN(parseInt(stockMinVal)) || parseInt(stockMinVal) < 0) {
-                alertError.innerText = "El stock mínimo no puede ser un valor negativo.";
+                if (inputStockMinEl) inputStockMinEl.classList.add('input-error');
+                alertError.innerText = "El stock no puede ser negativo.";
                 alertError.style.display = "block";
-                document.getElementById("add_stock_minimo").focus();
+                if (inputStockMinEl) inputStockMinEl.focus();
                 return;
             }
 
             document.getElementById("modalConfirmacionGuardar").style.display = "flex";
         };
+
+        // Quitar resaltados de error dinámicamente al escribir en modal Agregar
+        ['inputCodigo', 'add_nombre', 'add_categoria', 'add_unidad_medida', 'add_precio', 'add_stock', 'add_stock_minimo'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', function() {
+                    this.classList.remove('input-error');
+                    alertError.style.display = 'none';
+                });
+                el.addEventListener('change', function() {
+                    this.classList.remove('input-error');
+                    alertError.style.display = 'none';
+                });
+            }
+        });
 
         // Ejecutar Guardar Producto
         document.getElementById("btnEjecutarGuardar").onclick = function() {
