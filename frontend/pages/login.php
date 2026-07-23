@@ -173,8 +173,11 @@ $isTimeout = isset($_GET['timeout']) && $_GET['timeout'] == '1';
 <body>
 
     <div class="login-box">
-        <div class="login-logo">
-            <h2><b>MASS</b> Inventario</h2>
+        <div class="login-logo" style="margin-bottom: 25px;">
+            <div style="background: white; border-radius: 12px; padding: 12px 20px; display: inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.08); border: 1px solid #F3F4F6; margin-bottom: 10px;">
+                <img src="../img/logo_mass.png" alt="Tienda Mass" style="max-width: 170px; height: auto; display: block; margin: 0 auto;">
+            </div>
+            <div style="font-size: 13px; font-weight: 700; color: #6B7280; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 5px;">Sistema de Inventario</div>
         </div>
         
         <div class="login-card-body">

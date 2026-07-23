@@ -115,7 +115,11 @@ $_SESSION['last_activity'] = time();
 
     <!-- BARRA LATERAL -->
     <aside class="sidebar">
-        <h2>MASS</h2>
+        <div style="padding: 20px 25px 20px 25px; text-align: center;">
+            <div style="background: white; border-radius: 12px; padding: 12px 18px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);">
+                <img src="../img/logo_mass.png" alt="Tienda Mass" style="max-width: 140px; height: auto; display: block;">
+            </div>
+        </div>
         <ul>
             <li class="disabled"><a href="javascript:void(0)" title="Módulo fuera del alcance actual"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
             <li class="active"><a href="productos.php"><i class="fa-solid fa-book-open"></i> Catálogo de Productos</a></li>
