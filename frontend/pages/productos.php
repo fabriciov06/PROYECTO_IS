@@ -354,7 +354,106 @@ if (!isset($_SESSION['usuario_logeado'])) {
             </div>
         </div>
     </div>
+<!-- MODAL CONFIRMACIÓN DE DESACTIVACIÓN -->
+<div id="modalConfirmacionDesactivar" class="modal">
+    <div class="modal-content" style="max-width: 450px; text-align: center;">
 
+        <div style="font-size: 48px; color: #DC2626; margin-bottom: 15px;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+
+        <h2>Desactivar Producto</h2>
+
+        <div
+            id="alertErrorDesactivar"
+            style="
+                display: none;
+                background: #FEE2E2;
+                color: #991B1B;
+                padding: 12px 15px;
+                border-radius: 8px;
+                font-size: 13px;
+                font-weight: 600;
+                margin-bottom: 15px;
+                border: 1px solid #FCA5A5;
+                text-align: left;
+            "
+        ></div>
+
+        <div
+            style="
+                background: #F3F4F6;
+                padding: 16px;
+                border-radius: 10px;
+                border: 1px solid #E5E7EB;
+                text-align: left;
+                margin-bottom: 20px;
+                font-size: 14px;
+                color: #374151;
+            "
+        >
+            <div style="margin-bottom: 6px;">
+                <strong>Código:</strong>
+                <span id="desactivar_codigo"></span>
+            </div>
+
+            <div style="margin-bottom: 6px;">
+                <strong>Nombre:</strong>
+                <span id="desactivar_nombre"></span>
+            </div>
+
+            <div style="margin-bottom: 6px;">
+                <strong>Categoría:</strong>
+                <span id="desactivar_categoria"></span>
+            </div>
+
+            <div style="margin-bottom: 6px;">
+                <strong>Estado:</strong>
+                <span id="desactivar_estado"></span>
+            </div>
+
+            <div>
+                <strong>Stock:</strong>
+                <span id="desactivar_stock"></span>
+            </div>
+        </div>
+
+        <p
+            style="
+                color: #4B5563;
+                font-size: 14px;
+                margin-bottom: 25px;
+                text-align: left;
+                line-height: 1.5;
+            "
+        >
+            ¿Está seguro de desactivar este producto? El producto dejará de estar disponible para nuevas operaciones, pero conservará su historial.
+        </p>
+
+        <input type="hidden" id="desactivar_id">
+
+        <div style="display: flex; gap: 10px;">
+            <button
+                type="button"
+                id="btnCancelarDesactivar"
+                class="btn-cancel"
+                style="flex: 1;"
+            >
+                Cancelar
+            </button>
+
+            <button
+                type="button"
+                id="btnEjecutarDesactivar"
+                class="btn-save"
+                style="flex: 1; background: #DC2626; color: white;"
+            >
+                Desactivar
+            </button>
+        </div>
+
+    </div>
+</div>
     <!-- MODAL FILTROS AVANZADOS -->
     <div id="modalBusqueda" class="modal">
         <div class="modal-content" style="max-width: 450px;">
@@ -400,7 +499,21 @@ if (!isset($_SESSION['usuario_logeado'])) {
         const indicatorCodigo = document.getElementById("indicatorCodigo");
         const alertError = document.getElementById("alertErrorAgregar");
         const alertErrorEditar = document.getElementById("alertErrorEditar");
-        
+        const modalDesactivar =
+    document.getElementById("modalConfirmacionDesactivar");
+
+const alertErrorDesactivar =
+    document.getElementById("alertErrorDesactivar");
+
+const btnEjecutarDesactivar =
+    document.getElementById("btnEjecutarDesactivar");
+
+const btnCancelarDesactivar =
+    document.getElementById("btnCancelarDesactivar");
+
+let desactivacionEnCurso = false;
+
+
         let codigoValido = false;
         let esDesactivado = false;
         let selectedRow = null;
@@ -920,21 +1033,142 @@ if (!isset($_SESSION['usuario_logeado'])) {
         };
 
         // DESACTIVAR PRODUCTO
-        function confirmarDesactivar(id, nombre) {
-            if (confirm(`¿Seguro que deseas desactivar el producto "${nombre}"?`)) {
-                fetch(`../../backend/acciones/eliminar_producto.php?id=${id}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.exito) {
-                            mostrarToast(data.mensaje);
-                            actualizarTabla();
-                        } else {
-                            alert(data.error);
-                        }
-                    });
+function abrirModalDesactivar(btn) {
+    const fila = btn.closest("tr");
+
+    if (fila) {
+        seleccionarFila(fila);
+    }
+
+    const id = parseInt(btn.dataset.id, 10);
+
+    if (isNaN(id) || id <= 0) {
+        alert("No se pudo identificar el producto seleccionado.");
+        return;
+    }
+
+    document.getElementById("desactivar_id").value = id;
+
+    document.getElementById("desactivar_codigo").textContent =
+        btn.dataset.codigo || "";
+
+    document.getElementById("desactivar_nombre").textContent =
+        btn.dataset.nombre || "";
+
+    document.getElementById("desactivar_categoria").textContent =
+        btn.dataset.categoria || "";
+
+    document.getElementById("desactivar_estado").textContent =
+        btn.dataset.estado && btn.dataset.estado.trim() !== ""
+            ? btn.dataset.estado
+            : "Sin estado";
+
+    document.getElementById("desactivar_stock").textContent =
+        btn.dataset.stock || "0";
+
+    alertErrorDesactivar.textContent = "";
+    alertErrorDesactivar.style.display = "none";
+
+    modalDesactivar.style.display = "flex";
+}
+
+function cerrarModalDesactivar() {
+    if (desactivacionEnCurso) {
+        return;
+    }
+
+    alertErrorDesactivar.textContent = "";
+    alertErrorDesactivar.style.display = "none";
+    modalDesactivar.style.display = "none";
+}
+
+btnCancelarDesactivar.onclick = cerrarModalDesactivar;
+
+btnEjecutarDesactivar.onclick = async function () {
+    if (desactivacionEnCurso) {
+        return;
+    }
+
+    const inputId = document.getElementById("desactivar_id");
+    const id = parseInt(inputId.value, 10);
+
+    if (isNaN(id) || id <= 0) {
+        alertErrorDesactivar.textContent =
+            "Debe seleccionar un producto válido.";
+
+        alertErrorDesactivar.style.display = "block";
+        return;
+    }
+
+    alertErrorDesactivar.textContent = "";
+    alertErrorDesactivar.style.display = "none";
+
+    desactivacionEnCurso = true;
+
+    btnEjecutarDesactivar.disabled = true;
+    btnCancelarDesactivar.disabled = true;
+    btnEjecutarDesactivar.textContent = "Desactivando...";
+
+    const parametros = new URLSearchParams();
+    parametros.append("id", String(id));
+
+    try {
+        const response = await fetch(
+            "../../backend/acciones/eliminar_producto.php",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type":
+                        "application/x-www-form-urlencoded; charset=UTF-8",
+                    "Accept": "application/json"
+                },
+                body: parametros.toString()
             }
+        );
+
+        let data;
+
+        try {
+            data = await response.json();
+        } catch (errorJson) {
+            throw new Error("Respuesta JSON inválida.");
         }
 
+        if (!response.ok || data.exito !== true) {
+            alertErrorDesactivar.textContent =
+                data.error ||
+                "No se pudo completar la desactivación. Intente nuevamente.";
+
+            alertErrorDesactivar.style.display = "block";
+            return;
+        }
+
+        desactivacionEnCurso = false;
+        cerrarModalDesactivar();
+
+        mostrarToast(
+            data.mensaje ||
+            "El producto ha sido desactivado correctamente."
+        );
+
+        actualizarTabla();
+
+    } catch (error) {
+        console.error("[DesactivarProducto]", error);
+
+        alertErrorDesactivar.textContent =
+            "No se pudo completar la desactivación. Intente nuevamente.";
+
+        alertErrorDesactivar.style.display = "block";
+
+    } finally {
+        desactivacionEnCurso = false;
+
+        btnEjecutarDesactivar.disabled = false;
+        btnCancelarDesactivar.disabled = false;
+        btnEjecutarDesactivar.textContent = "Desactivar";
+    }
+};
         // BÚSQUEDA Y FILTRADO
         const inputBuscar = document.getElementById('inputBuscar');
         const filtros = document.querySelectorAll('.filter-chip');

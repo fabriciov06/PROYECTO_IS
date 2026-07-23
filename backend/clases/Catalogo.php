@@ -140,10 +140,40 @@ class Catalogo {
         return false;
     }
 
-    public static function desactivarProducto(mysqli $conexion, int $id, string $usuario = 'Administrador'): bool {
-        $sql = "UPDATE productos SET estado = 'Desactivado' WHERE id_producto = $id";
-        if ($conexion->query($sql) === TRUE) {
-            Auditoria::registrar(
+    public static function desactivarProducto(
+        mysqli $conexion,
+        int $id,
+        string $usuario = 'Administrador'
+    ): bool {
+        $id = intval($id);
+        $stmt = null;
+        $transaccionIniciada = false;
+
+        try {
+            if (!$conexion->begin_transaction()) {
+                throw new RuntimeException("Error al iniciar la transacción de desactivación.");
+            }
+            $transaccionIniciada = true;
+
+            $sql = "UPDATE productos
+                    SET estado = 'Desactivado'
+                    WHERE id_producto = ?
+                      AND (estado IS NULL OR estado <> 'Desactivado')";
+
+            $stmt = $conexion->prepare($sql);
+            if (!$stmt) {
+                throw new RuntimeException("Error al preparar la consulta de desactivación.");
+            }
+
+            if (!$stmt->bind_param("i", $id) || !$stmt->execute()) {
+                throw new RuntimeException("Error al ejecutar la desactivación del producto.");
+            }
+
+            if ($stmt->affected_rows !== 1) {
+                throw new RuntimeException("No se pudo desactivar el producto. No se modificó exactamente una fila.");
+            }
+
+            $auditOk = Auditoria::registrar(
                 $conexion,
                 $usuario,
                 TipoOperacion::DESACTIVAR,
@@ -151,9 +181,27 @@ class Catalogo {
                 $id,
                 "Desactivación lógica de producto ID: $id"
             );
+
+            if ($auditOk !== true) {
+                throw new RuntimeException("Error al registrar la auditoría de desactivación.");
+            }
+
+            if (!$conexion->commit()) {
+                throw new RuntimeException("Error al confirmar la transacción de desactivación.");
+            }
+            $transaccionIniciada = false;
+
             return true;
+        } catch (Throwable $e) {
+            if ($transaccionIniciada) {
+                $conexion->rollback();
+            }
+            throw $e;
+        } finally {
+            if ($stmt instanceof mysqli_stmt) {
+                $stmt->close();
+            }
         }
-        return false;
     }
 
     public function replicarASedes(): void {

@@ -164,11 +164,149 @@ class Producto {
 
     public static function obtenerPorId(mysqli $conexion, int $id): ?array {
         $id = intval($id);
-        $res = $conexion->query("SELECT * FROM productos WHERE id_producto = $id");
-        if ($res && $res->num_rows > 0) {
-            return $res->fetch_assoc();
+
+        $stmt = $conexion->prepare(
+            "SELECT * FROM productos WHERE id_producto = ?"
+        );
+
+        if (!$stmt) {
+            throw new Exception(
+                "Error al preparar la consulta de selección del producto."
+            );
         }
-        return null;
+
+        if (
+            !$stmt->bind_param("i", $id) ||
+            !$stmt->execute()
+        ) {
+            $stmt->close();
+
+            throw new Exception(
+                "Error al ejecutar la consulta de selección del producto."
+            );
+        }
+
+        $res = $stmt->get_result();
+
+        if (!$res) {
+            $stmt->close();
+
+            throw new Exception(
+                "Error al obtener los resultados del producto."
+            );
+        }
+
+        $producto = null;
+
+        if ($res->num_rows > 0) {
+            $producto = $res->fetch_assoc();
+        }
+
+        $res->free();
+        $stmt->close();
+
+        return $producto;
+    }
+
+    public static function tieneOperacionesPendientes(
+        mysqli $conexion,
+        int $id
+    ): bool {
+        $id = intval($id);
+
+        $sqlSolicitudes = "
+            SELECT COUNT(*) AS total
+            FROM detalle_solicitud ds
+            INNER JOIN solicitudes_compra sc
+                ON ds.id_solicitud = sc.id_solicitud
+            WHERE ds.id_producto = ?
+              AND sc.estado = 'Pendiente'
+        ";
+
+        $stmtSol = $conexion->prepare($sqlSolicitudes);
+
+        if (!$stmtSol) {
+            throw new Exception(
+                "Error al preparar la consulta de solicitudes de compra pendientes."
+            );
+        }
+
+        if (
+            !$stmtSol->bind_param("i", $id) ||
+            !$stmtSol->execute()
+        ) {
+            $stmtSol->close();
+
+            throw new Exception(
+                "Error al ejecutar la consulta de solicitudes de compra pendientes."
+            );
+        }
+
+        $resSol = $stmtSol->get_result();
+
+        if (!$resSol) {
+            $stmtSol->close();
+
+            throw new Exception(
+                "Error al obtener resultados de solicitudes de compra pendientes."
+            );
+        }
+
+        $rowSol = $resSol->fetch_assoc();
+        $totalSol = $rowSol ? (int)$rowSol['total'] : 0;
+
+        $resSol->free();
+        $stmtSol->close();
+
+        if ($totalSol > 0) {
+            return true;
+        }
+
+        $sqlInformes = "
+            SELECT COUNT(*) AS total
+            FROM detalle_informe di
+            INNER JOIN informe_recepcion ir
+                ON di.id_informe = ir.id_informe
+            WHERE di.id_producto = ?
+              AND ir.estado = 'Pendiente'
+        ";
+
+        $stmtInf = $conexion->prepare($sqlInformes);
+
+        if (!$stmtInf) {
+            throw new Exception(
+                "Error al preparar la consulta de informes de recepción pendientes."
+            );
+        }
+
+        if (
+            !$stmtInf->bind_param("i", $id) ||
+            !$stmtInf->execute()
+        ) {
+            $stmtInf->close();
+
+            throw new Exception(
+                "Error al ejecutar la consulta de informes de recepción pendientes."
+            );
+        }
+
+        $resInf = $stmtInf->get_result();
+
+        if (!$resInf) {
+            $stmtInf->close();
+
+            throw new Exception(
+                "Error al obtener resultados de informes de recepción pendientes."
+            );
+        }
+
+        $rowInf = $resInf->fetch_assoc();
+        $totalInf = $rowInf ? (int)$rowInf['total'] : 0;
+
+        $resInf->free();
+        $stmtInf->close();
+
+        return $totalInf > 0;
     }
 
     public static function modificarProducto(

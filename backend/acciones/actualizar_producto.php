@@ -57,9 +57,23 @@ if ($precio <= 0 || $stock < 0 || $stock_minimo < 0) {
 }
 
 // Obtener datos actuales para auditoría detallada y verificación de cambios (Flujo 4.3)
-$prodActual = Producto::obtenerPorId($conexion, $id);
-if (!$prodActual) {
-    echo json_encode(['exito' => false, 'error' => 'El producto a modificar no existe en el sistema.']);
+try {
+    $prodActual = Producto::obtenerPorId($conexion, $id);
+
+    if (!$prodActual) {
+        echo json_encode([
+            'exito' => false,
+            'error' => 'El producto a modificar no existe en el sistema.'
+        ]);
+        exit();
+    }
+} catch (Throwable $e) {
+    http_response_code(500);
+
+    echo json_encode([
+        'exito' => false,
+        'error' => 'No se pudo completar la consulta del producto. Intente nuevamente.'
+    ]);
     exit();
 }
 
