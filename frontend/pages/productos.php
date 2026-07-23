@@ -103,6 +103,12 @@ $_SESSION['last_activity'] = time();
         /* TOAST DE NOTIFICACIÓN */
         .toast { position: fixed; bottom: 30px; right: 30px; background: #0F1B2D; color: white; padding: 15px 25px; border-radius: 10px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); font-weight: 600; display: flex; align-items: center; gap: 12px; z-index: 2000; opacity: 0; transform: translateY(20px); transition: 0.3s; pointer-events: none; border-left: 5px solid #FFD100; }
         .toast.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+        /* ESTILOS DE PAGINACIÓN */
+        .page-btn { padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; background: white; color: #374151; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px; }
+        .page-btn:hover:not(:disabled) { background: #F3F4F6; border-color: #9CA3AF; }
+        .page-btn.active { background: #0F1B2D; color: white; border-color: #0F1B2D; }
+        .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -140,13 +146,16 @@ $_SESSION['last_activity'] = time();
             </div>
         </div>
 
-        <div class="controls-panel">
-            <div class="search-actions">
-                <div style="position: relative;">
+        <!-- BARRA DE CONTROLES (Buscador a la izquierda, Acciones y Chips a la derecha) -->
+        <div class="controls-panel" style="display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
+            <div class="search-actions" style="flex: 1; max-width: 420px; min-width: 260px;">
+                <div style="position: relative; width: 100%;">
                     <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; top: 12px; color: #9CA3AF;"></i>
-                    <input type="text" id="inputBuscar" placeholder="Buscar por nombre o código..." style="padding-left: 40px;">
+                    <input type="text" id="inputBuscar" placeholder="Buscar por nombre o código..." style="padding-left: 40px; width: 100%;">
                 </div>
-                <button class="btn-filter" onclick="actualizarTabla(); mostrarToast('Listado actualizado.');" title="Actualizar datos del listado">
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <button class="btn-filter" id="btnRefrescar" onclick="actualizarTabla(1); mostrarToast('Listado actualizado.');" title="Actualizar datos del listado">
                     <i class="fa-solid fa-rotate-right"></i> Refrescar
                 </button>
                 <button class="btn-filter" onclick="abrirModalFiltros()">
@@ -155,6 +164,23 @@ $_SESSION['last_activity'] = time();
                 <button class="add-btn" id="btnAbrirModal" title="Atajo: Alt + N">
                     <i class="fa-solid fa-plus"></i> Agregar Producto <span style="font-size: 11px; opacity: 0.8;">(Alt+N)</span>
                 </button>
+            </div>
+        </div>
+
+        <!-- BARRA DE PAGINACIÓN SUPERIOR -->
+        <div class="pagination-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: white; border: 1px solid #E5E7EB; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #4B5563; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span>Mostrar:</span>
+                <select id="selectLimite" style="padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; font-weight: 600; background: #F9FAFB; cursor: pointer; outline: none;">
+                    <option value="10">10</option>
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                <span>registros</span>
+            </div>
+            <div id="counterRangeTextTop" style="font-weight: 600; color: #374151;">
+                Cargando registros...
             </div>
         </div>
 
@@ -177,6 +203,16 @@ $_SESSION['last_activity'] = time();
                     <!-- Carga asíncrona mediante AJAX -->
                 </tbody>
             </table>
+        </div>
+
+        <!-- BARRA DE PAGINACIÓN INFERIOR -->
+        <div class="pagination-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: white; border: 1px solid #E5E7EB; border-radius: 8px; margin-top: 15px; font-size: 13px; color: #4B5563; flex-wrap: wrap; gap: 10px;">
+            <div id="counterRangeTextBottom" style="font-weight: 600; color: #374151;">
+                Cargando registros...
+            </div>
+            <div class="pagination-controls" style="display: flex; align-items: center; gap: 5px;" id="paginationButtons">
+                <!-- Se genera dinámicamente: < Anterior 1 2 3 ... Siguiente > -->
+            </div>
         </div>
     </main>
 
@@ -1254,19 +1290,111 @@ btnEjecutarDesactivar.onclick = async function () {
         btnEjecutarDesactivar.textContent = "Desactivar";
     }
 };
-        // BÚSQUEDA Y FILTRADO
+        // BÚSQUEDA Y FILTRADO CON PAGINACIÓN GLOBAL (Paso 4 / RNF-11)
         const inputBuscar = document.getElementById('inputBuscar');
+        const selectLimite = document.getElementById('selectLimite');
         let filtroActual = 'Todos';
+        let paginaActual = 1;
+        let limiteActual = 25;
+        let timerBusqueda = null;
 
-        function actualizarTabla() {
-            let q = inputBuscar.value;
-            let min = document.getElementById('precioMin').value;
-            let max = document.getElementById('precioMax').value;
-            let cat = document.getElementById('categoriaBusqueda').value;
+        function actualizarTabla(pageOverride) {
+            if (pageOverride) {
+                paginaActual = parseInt(pageOverride, 10) || 1;
+            }
+            if (selectLimite) {
+                limiteActual = parseInt(selectLimite.value, 10) || 25;
+            }
 
-            fetch(`../../backend/acciones/filtrar_productos.php?q=${encodeURIComponent(q)}&f=${encodeURIComponent(filtroActual)}&min=${min}&max=${max}&cat=${encodeURIComponent(cat)}`)
-                .then(res => res.text())
-                .then(html => document.getElementById('tablaProductos').innerHTML = html);
+            let q = inputBuscar ? inputBuscar.value.trim() : '';
+            let min = precioMinInput ? precioMinInput.value.trim() : '';
+            let max = precioMaxInput ? precioMaxInput.value.trim() : '';
+            let cat = document.getElementById('categoriaBusqueda') ? document.getElementById('categoriaBusqueda').value : '';
+
+            const params = new URLSearchParams({
+                q: q,
+                f: filtroActual,
+                min: min,
+                max: max,
+                cat: cat,
+                pagina: paginaActual,
+                limite: limiteActual
+            });
+
+            fetch(`../../backend/acciones/filtrar_productos.php?${params.toString()}`)
+                .then(res => res.json())
+                .then(data => {
+                    const tbody = document.getElementById('tablaProductos');
+                    if (data.exito) {
+                        tbody.innerHTML = data.html;
+                        paginaActual = data.pagina_actual;
+                        limiteActual = data.limite;
+
+                        const textoContador = data.total > 0
+                            ? `Mostrando ${data.desde}–${data.hasta} de ${data.total} productos`
+                            : `Mostrando 0 productos`;
+
+                        const elTop = document.getElementById('counterRangeTextTop');
+                        const elBottom = document.getElementById('counterRangeTextBottom');
+                        if (elTop) elTop.innerText = textoContador;
+                        if (elBottom) elBottom.innerText = textoContador;
+
+                        renderPaginationControls(data.pagina_actual, data.total_paginas);
+                    } else {
+                        tbody.innerHTML = data.html || `<tr><td colspan='8' style='text-align: center; padding: 40px; color: #DC2626; font-weight: 600;'>${data.error}</td></tr>`;
+                        renderPaginationControls(1, 1);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error al actualizar tabla:', err);
+                    const tbody = document.getElementById('tablaProductos');
+                    if (tbody) {
+                        // Flujo Alterno 2.2: Error de carga (RNF-23)
+                        tbody.innerHTML = "<tr><td colspan='8' style='text-align: center; padding: 40px; color: #DC2626; font-weight: 600;'><i class='fa-solid fa-circle-exclamation' style='font-size: 24px; margin-bottom: 10px; display: block;'></i>No se pudo cargar el listado. Intente refrescando la página.</td></tr>";
+                    }
+                });
+        }
+
+        function renderPaginationControls(current, totalPages) {
+            const container = document.getElementById("paginationButtons");
+            if (!container) return;
+
+            if (totalPages <= 1) {
+                container.innerHTML = "";
+                return;
+            }
+
+            let html = "";
+            const prevDisabled = current <= 1 ? "disabled" : "";
+            html += `<button class="page-btn" ${prevDisabled} onclick="actualizarTabla(${current - 1})"><i class="fa-solid fa-chevron-left"></i> Anterior</button>`;
+
+            const delta = 2;
+            const range = [];
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= current - delta && i <= current + delta)) {
+                    range.push(i);
+                }
+            }
+
+            let prevNumber = 0;
+            for (const i of range) {
+                if (prevNumber) {
+                    if (i - prevNumber === 2) {
+                        range.push(prevNumber + 1);
+                    } else if (i - prevNumber > 2) {
+                        html += `<span style="padding: 6px 8px; color: #9CA3AF;">...</span>`;
+                    }
+                }
+                const activeClass = i === current ? "active" : "";
+                html += `<button class="page-btn ${activeClass}" onclick="actualizarTabla(${i})">${i}</button>`;
+                prevNumber = i;
+            }
+
+            const nextDisabled = current >= totalPages ? "disabled" : "";
+            html += `<button class="page-btn" ${nextDisabled} onclick="actualizarTabla(${current + 1})">Siguiente <i class="fa-solid fa-chevron-right"></i></button>`;
+
+            container.innerHTML = html;
         }
 
         // ========================================================
@@ -1278,8 +1406,6 @@ btnEjecutarDesactivar.onclick = async function () {
         const errorPrecioMax = document.getElementById('errorPrecioMax');
         const alertErrorFiltros = document.getElementById('alertErrorFiltros');
 
-        // Sanea un valor de precio: solo dígitos, un separador decimal (coma → punto),
-        // máximo 2 decimales, sin negativos; ignora espacios al inicio y final.
         function sanearValorPrecio(valor) {
             let v = valor.trim().replace(/,/g, '.');
             let limpio = '';
@@ -1293,7 +1419,7 @@ btnEjecutarDesactivar.onclick = async function () {
                     tienePunto = true;
                     limpio += ch;
                 } else {
-                    invalido = true; // letra, símbolo, negativo o segundo separador
+                    invalido = true;
                 }
             }
 
@@ -1307,17 +1433,15 @@ btnEjecutarDesactivar.onclick = async function () {
         }
 
         function configurarCampoPrecio(input, errorSpan) {
-            // Bloqueo al teclear: el carácter inválido nunca llega a escribirse
             input.addEventListener('keydown', function(e) {
                 if (e.ctrlKey || e.metaKey || e.altKey) return;
-                if (e.key.length !== 1) return; // Tab, Backspace, flechas, etc.
+                if (e.key.length !== 1) return;
 
-                if (e.key === ' ') { // espacios: se ignoran sin mensaje
+                if (e.key === ' ') {
                     e.preventDefault();
                     return;
                 }
 
-                // Valor que quedaría fuera de la selección actual
                 const valorRestante = this.value.slice(0, this.selectionStart) + this.value.slice(this.selectionEnd);
                 const esDigito = e.key >= '0' && e.key <= '9';
                 const esSeparador = (e.key === '.' || e.key === ',') && !valorRestante.includes('.');
@@ -1325,7 +1449,7 @@ btnEjecutarDesactivar.onclick = async function () {
                 if (esDigito) {
                     const punto = valorRestante.indexOf('.');
                     if (punto !== -1 && this.selectionStart > punto && valorRestante.length - punto - 1 >= 2) {
-                        e.preventDefault(); // ya hay 2 decimales
+                        e.preventDefault();
                         errorSpan.style.visibility = 'visible';
                         return;
                     }
@@ -1338,11 +1462,10 @@ btnEjecutarDesactivar.onclick = async function () {
                     return;
                 }
 
-                e.preventDefault(); // letras, símbolos, signo menos, segundo separador
+                e.preventDefault();
                 errorSpan.style.visibility = 'visible';
             });
 
-            // Saneo al modificar el valor (cubre pegado, autocompletado y coma → punto)
             input.addEventListener('input', function() {
                 const { limpio, invalido } = sanearValorPrecio(this.value);
                 if (this.value !== limpio) {
@@ -1353,17 +1476,15 @@ btnEjecutarDesactivar.onclick = async function () {
             });
         }
 
-        configurarCampoPrecio(precioMinInput, errorPrecioMin);
-        configurarCampoPrecio(precioMaxInput, errorPrecioMax);
+        if (precioMinInput && errorPrecioMin) configurarCampoPrecio(precioMinInput, errorPrecioMin);
+        if (precioMaxInput && errorPrecioMax) configurarCampoPrecio(precioMaxInput, errorPrecioMax);
 
         function abrirModalFiltros() {
-            // Los valores aplicados se conservan: el modal solo se oculta, nunca se resetea
             alertErrorFiltros.style.visibility = 'hidden';
             modalBusq.style.display = 'flex';
             setTimeout(() => document.getElementById('categoriaBusqueda').focus(), 100);
         }
 
-        // Navegación con Tab dentro del modal (ciclo de foco)
         modalBusq.addEventListener('keydown', function(e) {
             if (e.key !== 'Tab' || modalBusq.style.display !== 'flex') return;
             const enfocables = modalBusq.querySelectorAll('select, input, button');
@@ -1379,30 +1500,9 @@ btnEjecutarDesactivar.onclick = async function () {
             }
         });
 
-        // Consulta con indicador de carga y manejo de error de conexión.
-        // (Función propia de CU-4: no altera actualizarTabla(), compartida con otros CU.)
-        function consultarCatalogoFiltrado() {
-            const tbody = document.getElementById('tablaProductos');
-            tbody.innerHTML = "<tr><td colspan='8' style='text-align: center; padding: 40px; color: #6B7280;'><i class='fa-solid fa-spinner fa-spin' style='margin-right: 8px; color: #FFD100;'></i> Cargando resultados...</td></tr>";
-
-            const q = inputBuscar.value;
-            const min = precioMinInput.value.trim();
-            const max = precioMaxInput.value.trim();
-            const cat = document.getElementById('categoriaBusqueda').value;
-
-            fetch(`../../backend/acciones/filtrar_productos.php?q=${encodeURIComponent(q)}&f=${encodeURIComponent(filtroActual)}&min=${encodeURIComponent(min)}&max=${encodeURIComponent(max)}&cat=${encodeURIComponent(cat)}`)
-                .then(res => res.text())
-                .then(html => { tbody.innerHTML = html; })
-                .catch(() => {
-                    tbody.innerHTML = "<tr><td colspan='8' style='text-align: center; padding: 40px; color: #9B1C1C;'>No se pudo consultar el catálogo. Verifique su conexión e intente nuevamente.</td></tr>";
-                    mostrarToast('Error de conexión. Sus criterios de filtro se han conservado.');
-                });
-        }
-
         function aplicarFiltrosAvanzados() {
             alertErrorFiltros.style.visibility = 'hidden';
 
-            // Normalizar: quitar espacios y separador decimal incompleto ("12." → "12")
             let minStr = precioMinInput.value.trim().replace(/\.$/, '');
             let maxStr = precioMaxInput.value.trim().replace(/\.$/, '');
             precioMinInput.value = minStr;
@@ -1420,20 +1520,18 @@ btnEjecutarDesactivar.onclick = async function () {
                 return;
             }
 
-            // Funciona con: solo mínimo, solo máximo, ninguno o ambos iguales
             if (minStr !== '' && maxStr !== '' && parseFloat(minStr) > parseFloat(maxStr)) {
                 alertErrorFiltros.innerText = 'El mínimo no puede superar al máximo';
                 alertErrorFiltros.style.visibility = 'visible';
-                return; // no se ejecuta la consulta
+                return;
             }
 
             filtroActual = document.getElementById('estadoStockBusqueda').value;
             modalBusq.style.display = 'none';
-            consultarCatalogoFiltrado();
+            actualizarTabla(1);
         }
 
         function limpiarFiltrosCatalogo() {
-            // Resetea los 4 criterios del modal. No toca el buscador por nombre (CU-5).
             precioMinInput.value = '';
             precioMaxInput.value = '';
             document.getElementById('categoriaBusqueda').value = '';
@@ -1444,14 +1542,40 @@ btnEjecutarDesactivar.onclick = async function () {
 
             filtroActual = 'Todos';
             modalBusq.style.display = 'none';
-            consultarCatalogoFiltrado();
+            actualizarTabla(1);
         }
 
-        inputBuscar.addEventListener('input', actualizarTabla);
+        // Chips de filtro por estado
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', function() {
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                filtroActual = this.getAttribute('data-filter') || 'Todos';
+                actualizarTabla(1);
+            });
+        });
+
+        // Selector de límite por página (10, 25, 50, 100)
+        if (selectLimite) {
+            selectLimite.addEventListener('change', function() {
+                limiteActual = parseInt(this.value, 10) || 25;
+                actualizarTabla(1);
+            });
+        }
+
+        // Búsqueda en tiempo real con debounce
+        if (inputBuscar) {
+            inputBuscar.addEventListener('input', function() {
+                clearTimeout(timerBusqueda);
+                timerBusqueda = setTimeout(() => {
+                    actualizarTabla(1);
+                }, 250);
+            });
+        }
 
         window.onload = function() {
             cargarCategorias();
-            actualizarTabla();
+            actualizarTabla(1);
         };
     </script>
 </body>

@@ -102,71 +102,132 @@ class Producto {
     }
 
     public static function buscar(mysqli $conexion, string $q = '', string $f = 'Todos', string $min = '', string $max = '', string $cat = ''): array {
-        $sql = "SELECT * FROM productos WHERE (estado != 'Desactivado' OR estado IS NULL)";
+        $res = self::buscarPaginado($conexion, $q, $f, $min, $max, $cat, 1, 1000);
+        return $res['productos'];
+    }
+
+    public static function buscarPaginado(
+        mysqli $conexion,
+        string $q = '',
+        string $f = 'Todos',
+        string $min = '',
+        string $max = '',
+        string $cat = '',
+        int $pagina = 1,
+        int $limite = 25
+    ): array {
+        // Flujo Alterno 4.2: Búsqueda muy corta (< 2 caracteres), no filtrar por $q
+        $qClean = trim($q);
+        if (mb_strlen($qClean, 'UTF-8') < 2) {
+            $qClean = '';
+        }
+
+        // Sanitización de $limite (permitidos: 10, 25, 50, 100)
+        $limitesValidos = [10, 25, 50, 100];
+        if (!in_array($limite, $limitesValidos, true)) {
+            $limite = 25;
+        }
+
+        $baseWhere = " WHERE (estado != 'Desactivado' OR estado IS NULL)";
         $tipos = '';
         $parametros = [];
 
-        if ($q != '') {
-            $sql .= " AND (nombre LIKE ? OR codigo LIKE ?)";
-            $like = '%' . $q . '%';
+        if ($qClean !== '') {
+            $baseWhere .= " AND (nombre LIKE ? OR codigo LIKE ?)";
+            $like = '%' . $qClean . '%';
             $tipos .= 'ss';
             $parametros[] = $like;
             $parametros[] = $like;
         }
 
-        // Estado de stock: misma lógica que el badge de la tabla (CU-4)
+        // Estado de stock
         if ($f == 'Stock Bajo') {
-            $sql .= " AND stock < stock_minimo AND stock > 0";
+            $baseWhere .= " AND stock < stock_minimo AND stock > 0";
         } elseif ($f == 'Agotados' || $f == 'Agotado') {
-            $sql .= " AND stock <= 0";
+            $baseWhere .= " AND stock <= 0";
         } elseif ($f == 'Normal') {
-            $sql .= " AND stock >= stock_minimo AND stock > 0";
+            $baseWhere .= " AND stock >= stock_minimo AND stock > 0";
         }
 
-        if ($min != '') {
-            $sql .= " AND precio >= ?";
+        if ($min !== '') {
+            $baseWhere .= " AND precio >= ?";
             $tipos .= 'd';
             $parametros[] = floatval($min);
         }
-        if ($max != '') {
-            $sql .= " AND precio <= ?";
+        if ($max !== '') {
+            $baseWhere .= " AND precio <= ?";
             $tipos .= 'd';
             $parametros[] = floatval($max);
         }
-        if ($cat != '') {
-            $sql .= " AND categoria = ?";
+        if ($cat !== '') {
+            $baseWhere .= " AND categoria = ?";
             $tipos .= 's';
             $parametros[] = $cat;
         }
 
-        $sql .= " ORDER BY codigo ASC";
+        // 1. OBTENER CONTEO TOTAL GLOBAL (Paso 4 / RNF-11)
+        $sqlCount = "SELECT COUNT(*) as total FROM productos" . $baseWhere;
+        $stmtCount = $conexion->prepare($sqlCount);
+        $total = 0;
+        if ($stmtCount) {
+            if ($tipos !== '') {
+                $stmtCount->bind_param($tipos, ...$parametros);
+            }
+            if ($stmtCount->execute()) {
+                $resCount = $stmtCount->get_result();
+                if ($resCount && $rowC = $resCount->fetch_assoc()) {
+                    $total = (int)$rowC['total'];
+                }
+                if ($resCount) $resCount->free();
+            }
+            $stmtCount->close();
+        }
+
+        // 2. CALCULAR PÁGINAS Y AJUSTAR PÁGINA (Flujo 8.1 - Página fuera de rango)
+        $totalPaginas = $total > 0 ? (int)ceil($total / $limite) : 1;
+        if ($pagina < 1) {
+            $pagina = 1;
+        }
+        if ($pagina > $totalPaginas) {
+            $pagina = $totalPaginas;
+        }
+
+        $offset = ($pagina - 1) * $limite;
+
+        // 3. CONSULTAR PRODUCTOS DE LA PÁGINA ACTUAL (Ordenados por código ASC RNF-09)
+        $sqlSelect = "SELECT * FROM productos" . $baseWhere . " ORDER BY codigo ASC LIMIT ? OFFSET ?";
+        $tiposSelect = $tipos . 'ii';
+        $parametrosSelect = array_merge($parametros, [$limite, $offset]);
 
         $productos = [];
-        $stmt = $conexion->prepare($sql);
-        if (!$stmt) {
-            return $productos;
-        }
-
-        if ($tipos !== '' && !$stmt->bind_param($tipos, ...$parametros)) {
-            $stmt->close();
-            return $productos;
-        }
-
-        if (!$stmt->execute()) {
-            $stmt->close();
-            return $productos;
-        }
-
-        $resultado = $stmt->get_result();
-        if ($resultado) {
-            while ($fila = $resultado->fetch_assoc()) {
-                $productos[] = $fila;
+        $stmtSelect = $conexion->prepare($sqlSelect);
+        if ($stmtSelect) {
+            if ($stmtSelect->bind_param($tiposSelect, ...$parametrosSelect)) {
+                if ($stmtSelect->execute()) {
+                    $resSel = $stmtSelect->get_result();
+                    if ($resSel) {
+                        while ($row = $resSel->fetch_assoc()) {
+                            $productos[] = $row;
+                        }
+                        $resSel->free();
+                    }
+                }
             }
-            $resultado->free();
+            $stmtSelect->close();
         }
-        $stmt->close();
 
-        return $productos;
+        $desde = $total > 0 ? $offset + 1 : 0;
+        $hasta = $total > 0 ? min($offset + $limite, $total) : 0;
+
+        return [
+            'productos' => $productos,
+            'total' => $total,
+            'pagina_actual' => $pagina,
+            'total_paginas' => $totalPaginas,
+            'limite' => $limite,
+            'desde' => $desde,
+            'hasta' => $hasta
+        ];
     }
 
     public static function contarTotal(mysqli $conexion): int {
