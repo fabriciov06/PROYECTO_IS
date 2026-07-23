@@ -233,7 +233,7 @@ $_SESSION['last_activity'] = time();
                     <div class="form-group full-width">
                         <label>Código del Producto <span class="req">*</span></label>
                         <div style="display: flex; gap: 8px; align-items: center;">
-                            <input type="text" id="add_codigo" name="codigo" placeholder="Ej: P0000001" required autocomplete="off" style="flex: 1;">
+                            <input type="text" id="add_codigo" name="codigo" placeholder="Ej: P0000001" maxlength="8" required autocomplete="off" style="flex: 1;">
                             <button type="button" id="btnGenerarCodigoAuto" class="btn-filter" style="padding: 10px 14px; font-size: 12px; white-space: nowrap;" title="Generar código sugerido automáticamente">
                                 <i class="fa-solid fa-wand-magic-sparkles"></i> Auto
                             </button>
