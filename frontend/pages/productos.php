@@ -476,12 +476,12 @@ $_SESSION['last_activity'] = time();
                         <label>Precio Mín. (S/)</label>
                         <input type="text" id="precioMin" inputmode="decimal" placeholder="0.00" autocomplete="off">
                         <!-- Espacio siempre reservado: el layout no se mueve al aparecer/desaparecer -->
-                        <span id="errorPrecioMin" class="status-indicator status-invalid" style="visibility: hidden; min-height: 18px; white-space: nowrap;">Solo números</span>
+                        <span id="errorPrecioMin" class="status-indicator status-invalid" style="visibility: hidden; min-height: 18px; white-space: nowrap;">Solo números (máx. 2 decimales)</span>
                     </div>
                     <div class="form-group" style="flex: 1; margin-bottom: 5px;">
                         <label>Precio Máx. (S/)</label>
                         <input type="text" id="precioMax" inputmode="decimal" placeholder="0.00" autocomplete="off">
-                        <span id="errorPrecioMax" class="status-indicator status-invalid" style="visibility: hidden; min-height: 18px; white-space: nowrap;">Solo números</span>
+                        <span id="errorPrecioMax" class="status-indicator status-invalid" style="visibility: hidden; min-height: 18px; white-space: nowrap;">Solo números (máx. 2 decimales)</span>
                     </div>
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
