@@ -11,7 +11,19 @@ class Categoria {
     }
 
     public static function listar(mysqli $conexion): array {
-        $categorias = [];
+        $masterCats = [
+            'Abarrotes',
+            'Bebidas',
+            'Carnes y Embutidos',
+            'Cuidado Personal',
+            'Frutas y Verduras',
+            'Lácteos y Huevos',
+            'Limpieza y Hogar',
+            'Panadería y Pastelería',
+            'Snacks y Golosinas'
+        ];
+
+        $categorias = $masterCats;
 
         // 1. Consultar de la tabla `categorias` si existe en la base de datos
         try {
@@ -20,7 +32,9 @@ class Categoria {
                 $res = $conexion->query("SELECT DISTINCT nombre FROM categorias WHERE nombre IS NOT NULL AND nombre != ''");
                 if ($res && $res->num_rows > 0) {
                     while ($row = $res->fetch_assoc()) {
-                        $categorias[] = $row['nombre'];
+                        if (!in_array($row['nombre'], $categorias)) {
+                            $categorias[] = $row['nombre'];
+                        }
                     }
                 }
             }
@@ -28,7 +42,7 @@ class Categoria {
             // Ignorar error si la tabla no existe
         }
 
-        // 2. Consultar categorías activas en la tabla `productos`
+        // 2. Consultar categorías registradas en la tabla `productos`
         try {
             $resProd = $conexion->query("SELECT DISTINCT categoria FROM productos WHERE categoria IS NOT NULL AND categoria != ''");
             if ($resProd && $resProd->num_rows > 0) {
@@ -40,21 +54,6 @@ class Categoria {
             }
         } catch (\Throwable $e) {
             // Ignorar
-        }
-
-        // 3. Fallback con categorías estándar de supermercado real (Tiendas MASS)
-        if (empty($categorias)) {
-            $categorias = [
-                'Abarrotes',
-                'Bebidas',
-                'Carnes y Embutidos',
-                'Cuidado Personal',
-                'Frutas y Verduras',
-                'Lácteos y Huevos',
-                'Limpieza y Hogar',
-                'Panadería y Pastelería',
-                'Snacks y Golosinas'
-            ];
         }
 
         sort($categorias);
