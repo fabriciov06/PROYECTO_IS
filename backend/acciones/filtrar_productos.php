@@ -92,14 +92,18 @@ try {
                   </tr>";
         }
     } else {
-        // Verificar si es por búsqueda/filtro o por catálogo vacío
-        $hayFiltros = (trim($q) !== '' && mb_strlen(trim($q), 'UTF-8') >= 2) || $f !== 'Todos' || $cat !== '' || $min !== '' || $max !== '';
+        // Verificar si es por búsqueda por término, filtros avanzados o por catálogo vacío
+        $hayBusqueda = (trim($q) !== '' && mb_strlen(trim($q), 'UTF-8') >= 2);
+        $hayFiltros = $f !== 'Todos' || $cat !== '' || $min !== '' || $max !== '';
 
-        if ($hayFiltros) {
-            // Flujo Alterno 8.1: Sin resultados de filtro
+        if ($hayBusqueda) {
+            // CU Consultar - Flujo Alterno 4.1: Sin resultados de búsqueda
+            $html = "<tr><td colspan='8' style='text-align: center; padding: 40px; color: #6B7280; font-weight: 500;'><i class='fa-solid fa-magnifying-glass' style='font-size: 24px; color: #9CA3AF; margin-bottom: 10px; display: block;'></i>No se encontraron productos para la búsqueda realizada.</td></tr>";
+        } elseif ($hayFiltros) {
+            // CU Filtrar - Flujo Alterno 8.1: Sin resultados de filtro
             $html = "<tr><td colspan='8' style='text-align: center; padding: 40px; color: #6B7280; font-weight: 500;'><i class='fa-solid fa-magnifying-glass' style='font-size: 24px; color: #9CA3AF; margin-bottom: 10px; display: block;'></i>No se encontraron productos en el inventario.</td></tr>";
         } else {
-            // Flujo Alterno 2.1: Sin productos registrados
+            // CU Consultar - Flujo Alterno 2.1: Sin productos registrados
             $html = "<tr><td colspan='8' style='text-align: center; padding: 40px; color: #6B7280; font-weight: 500;'><i class='fa-solid fa-box-open' style='font-size: 24px; color: #9CA3AF; margin-bottom: 10px; display: block;'></i>No hay productos registrados. Presione <kbd style='background:#E5E7EB; padding:2px 6px; border-radius:4px; font-weight:700;'>Alt+N</kbd> para agregar el primero.</td></tr>";
         }
     }
