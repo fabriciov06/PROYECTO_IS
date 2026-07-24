@@ -256,11 +256,20 @@ $_SESSION['last_activity'] = time();
                     </div>
 
                     <div class="form-group">
-                        <label>Presentación <span class="req">*</span></label>
+                        <label>Presentación / U. Medida <span class="req">*</span></label>
                         <select id="add_unidad_medida" name="unidad_medida" required>
                             <option value="unidad" selected>Unidad</option>
                             <option value="paquete">Paquete</option>
                             <option value="caja">Caja</option>
+                            <option value="bolsa">Bolsa</option>
+                            <option value="botella">Botella</option>
+                            <option value="lata">Lata</option>
+                            <option value="pote">Pote / Doypack</option>
+                            <option value="kg">Kilogramo (kg)</option>
+                            <option value="g">Gramo (g)</option>
+                            <option value="litro">Litro (L)</option>
+                            <option value="ml">Mililitro (ml)</option>
+                            <option value="pack">Pack / Sixpack</option>
                         </select>
                         <div id="err_add_unidad_medida" class="field-error-text"></div>
                     </div>
@@ -350,11 +359,20 @@ $_SESSION['last_activity'] = time();
                         <select id="edit_categoria" name="categoria" required></select>
                     </div>
                     <div class="form-group">
-                        <label>Presentación <span class="req">*</span></label>
+                        <label>Presentación / U. Medida <span class="req">*</span></label>
                         <select id="edit_unidad_medida" name="unidad_medida" required>
                             <option value="unidad" selected>Unidad</option>
                             <option value="paquete">Paquete</option>
                             <option value="caja">Caja</option>
+                            <option value="bolsa">Bolsa</option>
+                            <option value="botella">Botella</option>
+                            <option value="lata">Lata</option>
+                            <option value="pote">Pote / Doypack</option>
+                            <option value="kg">Kilogramo (kg)</option>
+                            <option value="g">Gramo (g)</option>
+                            <option value="litro">Litro (L)</option>
+                            <option value="ml">Mililitro (ml)</option>
+                            <option value="pack">Pack / Sixpack</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -600,7 +618,7 @@ let desactivacionEnCurso = false;
                             filterOptions += `<option value="${c}">${c}</option>`;
                         });
                     } else {
-                        const defaultCats = ['Abarrotes', 'Bebidas', 'Cuidado Personal', 'Embutidos', 'Lácteos', 'Limpieza', 'Panadería', 'Snacks'];
+                        const defaultCats = ['Abarrotes', 'Bebidas', 'Carnes y Embutidos', 'Cuidado Personal', 'Frutas y Verduras', 'Lácteos y Huevos', 'Limpieza y Hogar', 'Panadería y Pastelería', 'Snacks y Golosinas'];
                         defaultCats.forEach(c => {
                             options += `<option value="${c}">${c}</option>`;
                             filterOptions += `<option value="${c}">${c}</option>`;
@@ -612,7 +630,7 @@ let desactivacionEnCurso = false;
                 })
                 .catch(err => {
                     console.error('Error cargando categorías:', err);
-                    const defaultCats = ['Abarrotes', 'Bebidas', 'Cuidado Personal', 'Embutidos', 'Lácteos', 'Limpieza', 'Panadería', 'Snacks'];
+                    const defaultCats = ['Abarrotes', 'Bebidas', 'Carnes y Embutidos', 'Cuidado Personal', 'Frutas y Verduras', 'Lácteos y Huevos', 'Limpieza y Hogar', 'Panadería y Pastelería', 'Snacks y Golosinas'];
                     let options = '<option value="">Seleccione categoría...</option>';
                     let filterOptions = '<option value="">Todas las categorías</option>';
                     defaultCats.forEach(c => {

@@ -42,9 +42,19 @@ class Categoria {
             // Ignorar
         }
 
-        // 3. Fallback con categorías estándar de Tiendas MASS si la base de datos está vacía
+        // 3. Fallback con categorías estándar de supermercado real (Tiendas MASS)
         if (empty($categorias)) {
-            $categorias = ['Abarrotes', 'Bebidas', 'Cuidado Personal', 'Embutidos', 'Lácteos', 'Limpieza', 'Panadería', 'Snacks'];
+            $categorias = [
+                'Abarrotes',
+                'Bebidas',
+                'Carnes y Embutidos',
+                'Cuidado Personal',
+                'Frutas y Verduras',
+                'Lácteos y Huevos',
+                'Limpieza y Hogar',
+                'Panadería y Pastelería',
+                'Snacks y Golosinas'
+            ];
         }
 
         sort($categorias);
