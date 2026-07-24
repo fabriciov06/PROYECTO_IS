@@ -26,12 +26,12 @@ class Catalogo {
         string $descripcion = '',
         string $usuario = 'Administrador'
     ): array {
-        // Sanitización (RNF-17)
-        $codigoEscaped = $conexion->real_escape_string(htmlspecialchars(trim($codigo)));
-        $nombreEscaped = $conexion->real_escape_string(htmlspecialchars(trim($nombre)));
-        $categoriaEscaped = $conexion->real_escape_string(htmlspecialchars(trim($categoria)));
-        $unidadMedidaEscaped = $conexion->real_escape_string(htmlspecialchars(trim($unidadMedida)));
-        $descripcionEscaped = $conexion->real_escape_string(htmlspecialchars(trim($descripcion)));
+        // Sanitización limpia (RNF-17: remover etiquetas de código HTML/JS y escapar SQL)
+        $codigoEscaped = $conexion->real_escape_string(htmlspecialchars(strip_tags(trim($codigo))));
+        $nombreEscaped = $conexion->real_escape_string(htmlspecialchars(strip_tags(trim($nombre))));
+        $categoriaEscaped = $conexion->real_escape_string(htmlspecialchars(strip_tags(trim($categoria))));
+        $unidadMedidaEscaped = $conexion->real_escape_string(htmlspecialchars(strip_tags(trim($unidadMedida))));
+        $descripcionEscaped = $conexion->real_escape_string(htmlspecialchars(strip_tags(trim($descripcion))));
         $estado = 'Activo';
 
         // Validaciones de selección obligatoria (RNF-04)

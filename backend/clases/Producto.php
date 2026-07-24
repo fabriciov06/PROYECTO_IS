@@ -393,10 +393,10 @@ class Producto {
         string $descripcion = ''
     ): bool {
         $id = intval($id);
-        $nombreEscaped = $conexion->real_escape_string(htmlspecialchars(trim($nombre), ENT_QUOTES));
-        $categoriaEscaped = $conexion->real_escape_string(htmlspecialchars(trim($categoria), ENT_QUOTES));
-        $unidadMedidaEscaped = $conexion->real_escape_string(htmlspecialchars(trim($unidadMedida), ENT_QUOTES));
-        $descripcionEscaped = $conexion->real_escape_string(htmlspecialchars(trim($descripcion), ENT_QUOTES));
+        $nombreEscaped = $conexion->real_escape_string(htmlspecialchars(strip_tags(trim($nombre)), ENT_QUOTES));
+        $categoriaEscaped = $conexion->real_escape_string(htmlspecialchars(strip_tags(trim($categoria)), ENT_QUOTES));
+        $unidadMedidaEscaped = $conexion->real_escape_string(htmlspecialchars(strip_tags(trim($unidadMedida)), ENT_QUOTES));
+        $descripcionEscaped = $conexion->real_escape_string(htmlspecialchars(strip_tags(trim($descripcion)), ENT_QUOTES));
 
         $sql = "UPDATE productos SET 
                     nombre = '$nombreEscaped', 
