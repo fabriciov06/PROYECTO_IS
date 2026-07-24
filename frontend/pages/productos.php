@@ -262,14 +262,7 @@ $_SESSION['last_activity'] = time();
                             <option value="unidad" selected>Unidad</option>
                             <option value="paquete">Paquete</option>
                             <option value="caja">Caja</option>
-                            <option value="bolsa">Bolsa</option>
-                            <option value="botella">Botella</option>
-                            <option value="lata">Lata</option>
-                            <option value="pote">Pote / Doypack</option>
-                            <option value="kg">Kilogramo (kg)</option>
-                            <option value="g">Gramo (g)</option>
-                            <option value="litro">Litro (L)</option>
-                            <option value="ml">Mililitro (ml)</option>
+                            <option value="bolsa">Bolsa / Saco</option>
                             <option value="pack">Pack / Sixpack</option>
                         </select>
                         <div id="err_add_unidad_medida" class="field-error-text"></div>
@@ -365,14 +358,7 @@ $_SESSION['last_activity'] = time();
                             <option value="unidad" selected>Unidad</option>
                             <option value="paquete">Paquete</option>
                             <option value="caja">Caja</option>
-                            <option value="bolsa">Bolsa</option>
-                            <option value="botella">Botella</option>
-                            <option value="lata">Lata</option>
-                            <option value="pote">Pote / Doypack</option>
-                            <option value="kg">Kilogramo (kg)</option>
-                            <option value="g">Gramo (g)</option>
-                            <option value="litro">Litro (L)</option>
-                            <option value="ml">Mililitro (ml)</option>
+                            <option value="bolsa">Bolsa / Saco</option>
                             <option value="pack">Pack / Sixpack</option>
                         </select>
                     </div>
@@ -1400,18 +1386,20 @@ btnEjecutarDesactivar.onclick = async function () {
                 }
             }
 
-            let prevNumber = 0;
+            let lastPushed = 0;
             for (const i of range) {
-                if (prevNumber) {
-                    if (i - prevNumber === 2) {
-                        range.push(prevNumber + 1);
-                    } else if (i - prevNumber > 2) {
+                if (lastPushed) {
+                    if (i - lastPushed === 2) {
+                        const mid = lastPushed + 1;
+                        const activeClass = mid === current ? "active" : "";
+                        html += `<button class="page-btn ${activeClass}" onclick="actualizarTabla(${mid})">${mid}</button>`;
+                    } else if (i - lastPushed > 2) {
                         html += `<span style="padding: 6px 8px; color: #9CA3AF;">...</span>`;
                     }
                 }
                 const activeClass = i === current ? "active" : "";
                 html += `<button class="page-btn ${activeClass}" onclick="actualizarTabla(${i})">${i}</button>`;
-                prevNumber = i;
+                lastPushed = i;
             }
 
             const nextDisabled = current >= totalPages ? "disabled" : "";
