@@ -172,7 +172,7 @@ $_SESSION['last_activity'] = time();
                 </div>
             </div>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <button class="btn-filter" id="btnRefrescar" onclick="refrescarCatalogo();" title="Actualizar datos del listado (limpia búsqueda y mantiene filtros)">
+                <button class="btn-filter" id="btnRefrescar" onclick="refrescarCatalogo();" title="Actualizar datos del listado">
                     <i class="fa-solid fa-rotate-right"></i> Refrescar
                 </button>
                 <button class="btn-filter" onclick="abrirModalFiltros()">
@@ -1352,7 +1352,7 @@ btnEjecutarDesactivar.onclick = async function () {
                 inputBuscar.value = '';
             }
             actualizarTabla(1);
-            mostrarToast('Listado actualizado (búsqueda limpiada, filtros mantenidos).');
+            mostrarToast('Listado actualizado.');
         }
 
         if (inputBuscar) {
