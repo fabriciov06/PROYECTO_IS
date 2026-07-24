@@ -24,28 +24,13 @@ SET time_zone = "+00:00";
 CREATE DATABASE IF NOT EXISTS `inventario_mass`;
 USE `inventario_mass`;
 
--- Limpieza de tablas (DROP TABLE IF EXISTS para eliminar cualquier otra tabla que no sea auditoria, productos o usuarios)
-DROP TABLE IF EXISTS `reclamos`;
-DROP TABLE IF EXISTS `detalle_informe`;
-DROP TABLE IF EXISTS `informe_recepcion`;
-DROP TABLE IF EXISTS `guia_productos`;
-DROP TABLE IF EXISTS `detalle_solicitud`;
-DROP TABLE IF EXISTS `solicitudes_compra`;
-DROP TABLE IF EXISTS `alertas`;
-DROP TABLE IF EXISTS `historial_precios`;
-DROP TABLE IF EXISTS `movimientos_stock`;
-DROP TABLE IF EXISTS `cuentas`;
-
-DROP TABLE IF EXISTS `auditoria`;
-DROP TABLE IF EXISTS `productos`;
-DROP TABLE IF EXISTS `usuarios`;
-
 -- --------------------------------------------------------
 
 --
 -- Estructura de tabla para la tabla `auditoria`
 --
 
+DROP TABLE IF EXISTS `auditoria`;
 CREATE TABLE `auditoria` (
   `idAuditoria` int(11) NOT NULL,
   `usuario` varchar(100) NOT NULL,
@@ -109,6 +94,7 @@ INSERT INTO `auditoria` (`idAuditoria`, `usuario`, `fecha`, `tipo`, `entidad`, `
 -- Estructura de tabla para la tabla `productos`
 --
 
+DROP TABLE IF EXISTS `productos`;
 CREATE TABLE `productos` (
   `id_producto` int(11) NOT NULL,
   `codigo` varchar(20) NOT NULL,
@@ -184,6 +170,7 @@ INSERT INTO `productos` (`id_producto`, `codigo`, `nombre`, `descripcion`, `unid
 -- Estructura de tabla para la tabla `usuarios`
 --
 
+DROP TABLE IF EXISTS `usuarios`;
 CREATE TABLE `usuarios` (
   `id_usuario` int(11) NOT NULL,
   `nombre` varchar(100) NOT NULL,
@@ -200,7 +187,9 @@ CREATE TABLE `usuarios` (
 --
 
 INSERT INTO `usuarios` (`id_usuario`, `nombre`, `usuario`, `contrasenia`, `rol`, `estado`, `intentos_fallidos`, `session_id`) VALUES
-(1, 'Administrador Sistema', 'admin', 'admin123', 'Administrador', 'Activo', 0, 'p89aj44mkr7casc4kgfhsf6eab');
+(1, 'Administrador Sistema', 'admin', 'admin123', 'Administrador', 'Activo', 0, 'p89aj44mkr7casc4kgfhsf6eab'),
+(2, 'Jose Bocanegra Valverde', 'admin2', 'admin123', 'Administrador', 'Activo', 0, NULL),
+(3, 'Sebastian Salazar', 'admin3', 'admin123', 'Administrador', 'Activo', 0, NULL);
 
 --
 -- Índices para tablas volcadas
@@ -246,7 +235,7 @@ ALTER TABLE `productos`
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
