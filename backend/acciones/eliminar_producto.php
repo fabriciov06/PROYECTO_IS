@@ -15,12 +15,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
-// 2. VALIDAR SESIÓN
+// 2. VALIDAR SESIÓN (Flujo 2.1)
 if (empty($_SESSION['usuario_logeado']) || empty($_SESSION['rol'])) {
     http_response_code(401);
     echo json_encode([
         'exito' => false,
-        'error' => 'Debe iniciar sesión para realizar esta acción.'
+        'error' => 'Su sesión ha finalizado. Vuelva a iniciar sesión.'
     ]);
     exit();
 }
