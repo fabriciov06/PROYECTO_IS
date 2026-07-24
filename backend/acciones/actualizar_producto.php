@@ -17,17 +17,17 @@ if (!isset($_SESSION['usuario_logeado'])) {
 
 $usuario = $_SESSION['usuario_logeado'] ?? 'Administrador';
 
-// Recepción de parámetros POST
+// Recepción y Sanitización de parámetros POST (RNF-17)
 $id = intval($_POST['id'] ?? 0);
-$nombre = trim($_POST['nombre'] ?? '');
-$categoria = trim($_POST['categoria'] ?? '');
-$unidad_medida = trim($_POST['unidad_medida'] ?? 'unidad');
+$nombre = strip_tags(trim($_POST['nombre'] ?? ''));
+$categoria = strip_tags(trim($_POST['categoria'] ?? ''));
+$unidad_medida = strip_tags(trim($_POST['unidad_medida'] ?? 'unidad'));
 $precio = floatval($_POST['precio'] ?? 0);
 $stock = intval($_POST['stock'] ?? 0);
 $stock_minimo = intval($_POST['stock_minimo'] ?? 0);
-$descripcion = trim($_POST['descripcion'] ?? '');
+$descripcion = strip_tags(trim($_POST['descripcion'] ?? ''));
 
-// Sanitización (RNF-17)
+// Escapado seguro para HTML/Auditoría
 $nombreEscaped = htmlspecialchars($nombre, ENT_QUOTES);
 $categoriaEscaped = htmlspecialchars($categoria, ENT_QUOTES);
 $unidadMedidaEscaped = htmlspecialchars($unidad_medida, ENT_QUOTES);
