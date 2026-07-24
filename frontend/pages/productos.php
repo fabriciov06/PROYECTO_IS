@@ -66,13 +66,14 @@ $_SESSION['last_activity'] = time();
 
         /* TABLA DE PRODUCTOS */
         .table-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; border: 1px solid #E5E7EB; width: 100%; }
-        table { width: 100%; border-collapse: collapse; text-align: left; min-width: 800px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; min-width: 950px; }
         th { background: #F9FAFB; padding: 16px 16px; font-size: 12px; text-transform: uppercase; color: #6B7280; font-weight: 700; border-bottom: 1px solid #E5E7EB; white-space: nowrap; }
-        td { padding: 16px 16px; font-size: 14px; color: #111827; border-bottom: 1px solid #F3F4F6; vertical-align: middle; word-break: break-word; overflow-wrap: anywhere; }
+        td { padding: 14px 16px; font-size: 14px; color: #111827; border-bottom: 1px solid #F3F4F6; vertical-align: middle; }
+        td:first-child { white-space: nowrap; font-weight: 700; }
         tr:hover td { background: #F9FAFB; }
-        span.normal { background: #DEF7EC; color: #03543F; padding: 6px 12px; border-radius: 50px; font-size: 12px; font-weight: 700; }
-        span.warning { background: #FEF3C7; color: #92400E; padding: 6px 12px; border-radius: 50px; font-size: 12px; font-weight: 700; }
-        span.danger { background: #FDE8E8; color: #9B1C1C; padding: 6px 12px; border-radius: 50px; font-size: 12px; font-weight: 700; }
+        span.normal { background: #DEF7EC; color: #03543F; padding: 6px 12px; border-radius: 50px; font-size: 12px; font-weight: 700; display: inline-block; white-space: nowrap; }
+        span.warning { background: #FEF3C7; color: #92400E; padding: 6px 12px; border-radius: 50px; font-size: 12px; font-weight: 700; display: inline-block; white-space: nowrap; }
+        span.danger { background: #FDE8E8; color: #9B1C1C; padding: 6px 12px; border-radius: 50px; font-size: 12px; font-weight: 700; display: inline-block; white-space: nowrap; }
         .action-icon { font-size: 16px; margin-right: 15px; transition: 0.2s; text-decoration: none; display: inline-block; }
         .action-edit { color: #0F1B2D; } .action-edit:hover { color: #1E365A; }
         .action-delete { color: #EF4444; } .action-delete:hover { color: #B91C1C; }

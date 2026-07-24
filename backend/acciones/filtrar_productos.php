@@ -78,14 +78,14 @@ try {
             $descEsc = htmlspecialchars((string)($fila['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8');
             
             $html .= "<tr>
-                    <td><strong>{$codigoEsc}</strong></td>
-                    <td>{$nombreEsc}</td>
-                    <td><span style='background: #F3F4F6; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; color: #4B5563;'>{$catEsc}</span></td>
-                    <td style='font-weight: 600; color: #111827;'>S/ {$fila['precio']}</td>
-                    <td>{$fila['stock']} {$unidad}</td>
-                    <td style='color: #6B7280;'>{$fila['stock_minimo']} {$unidad}</td>
-                    <td><span class='$estado'>$textoEstado</span></td>
-                    <td>
+                    <td style='white-space: nowrap;'><strong>{$codigoEsc}</strong></td>
+                    <td style='min-width: 200px;'>{$nombreEsc}</td>
+                    <td style='white-space: nowrap;'><span style='background: #F3F4F6; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; color: #4B5563; display: inline-block; white-space: nowrap;'>{$catEsc}</span></td>
+                    <td style='font-weight: 600; color: #111827; white-space: nowrap;'>S/ {$fila['precio']}</td>
+                    <td style='white-space: nowrap;'>{$fila['stock']} {$unidad}</td>
+                    <td style='color: #6B7280; white-space: nowrap;'>{$fila['stock_minimo']} {$unidad}</td>
+                    <td style='white-space: nowrap;'><span class='$estado' style='display: inline-block; white-space: nowrap;'>$textoEstado</span></td>
+                    <td style='white-space: nowrap;'>
                         <a href='javascript:void(0)' data-id='{$fila['id_producto']}' data-codigo='{$codigoEsc}' data-nombre='{$nombreEsc}' data-categoria='{$catEsc}' data-precio='{$fila['precio']}' data-stock='{$fila['stock']}' data-stock-minimo='{$fila['stock_minimo']}' data-unidad-medida='{$unidad}' data-descripcion='{$descEsc}' onclick='abrirModalEditar(this)' class='action-icon action-edit' title='Modificar producto'><i class='fa-solid fa-pen-to-square'></i></a>
                         <a href='javascript:void(0)' data-id='{$idProducto}' data-codigo='{$codigoEsc}' data-nombre='{$nombreEsc}' data-categoria='{$catEsc}' data-estado='{$estadoProductoEsc}' data-stock='{$stockProducto}' onclick='abrirModalDesactivar(this)' class='action-icon action-delete' title='Desactivar producto'><i class='fa-solid fa-trash-can'></i></a>
                     </td>
