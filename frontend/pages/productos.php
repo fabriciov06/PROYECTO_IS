@@ -145,7 +145,7 @@ $_SESSION['last_activity'] = time();
         <div class="header-top">
             <div>
                 <h1>Catálogo de Productos</h1>
-                <p style="color: #6B7280; font-size: 14px; margin-top: 5px; margin-bottom: 0;">Gestión de inventario de la tienda MASS. Presiona <kbd style="background:#E5E7EB; padding:2px 6px; border-radius:4px; font-weight:700;">Alt + N</kbd> para agregar.</p>
+                <p style="color: #6B7280; font-size: 14px; margin-top: 5px; margin-bottom: 0;">Gestión de inventario de la tienda MASS.</p>
             </div>
             <div class="user-profile" style="position: relative;" onclick="let menu = document.getElementById('dropdown'); menu.style.display = menu.style.display === 'none' ? 'block' : 'none';">
                 <span>Administrador</span>
