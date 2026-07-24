@@ -147,7 +147,7 @@ $_SESSION['last_activity'] = time();
                 <h1>Catálogo de Productos</h1>
                 <p style="color: #6B7280; font-size: 14px; margin-top: 5px; margin-bottom: 0;">Gestión de inventario de la tienda MASS.</p>
             </div>
-            <div class="user-profile" style="position: relative;" onclick="let menu = document.getElementById('dropdown'); menu.style.display = menu.style.display === 'none' ? 'block' : 'none';">
+            <div class="user-profile" id="userProfileBtn" style="position: relative; cursor: pointer;">
                 <span>Administrador</span>
                 <div class="avatar">FV</div>
                 <div id="dropdown" style="display: none; position: absolute; top: 55px; right: 0; background: white; border: 1px solid #E5E7EB; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); width: 170px; z-index: 1000; overflow: hidden;">
@@ -1634,6 +1634,21 @@ btnEjecutarDesactivar.onclick = async function () {
         // ========================================================
         // CASO DE USO: CERRAR SESIÓN (Flujos 1 a 7, RNF-15)
         // ========================================================
+        const userProfileBtn = document.getElementById('userProfileBtn');
+        const dropdownMenu = document.getElementById('dropdown');
+
+        if (userProfileBtn && dropdownMenu) {
+            userProfileBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdownMenu.style.display = dropdownMenu.style.display === 'none' ? 'block' : 'none';
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!userProfileBtn.contains(e.target)) {
+                    dropdownMenu.style.display = 'none';
+                }
+            });
+        }
         function abrirModalLogout() {
             const dropdown = document.getElementById('dropdown');
             if (dropdown) dropdown.style.display = 'none';
