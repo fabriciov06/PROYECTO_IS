@@ -1,11 +1,18 @@
 <?php
 session_start();
+
+// Encabezados HTTP para evitar almacenamiento en caché del navegador (Flujo 7.1)
+header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
+
+// Verificación de sesión activa (Flujo 6.1 / Precondiciones)
 if (!isset($_SESSION['usuario_logeado'])) {
-    header("Location: login.php");
+    header("Location: login.php?no_session=1");
     exit();
 }
 
-// RNF-15: Cierre de sesión automático tras 30 minutos (1800 segundos) de inactividad
+// RNF-15: Cierre de sesión automático tras 30 minutos (1800 segundos) de inactividad (Flujo 3.1)
 $tiempoInactividad = 1800;
 if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $tiempoInactividad)) {
     session_unset();
@@ -140,11 +147,11 @@ $_SESSION['last_activity'] = time();
                 <h1>Catálogo de Productos</h1>
                 <p style="color: #6B7280; font-size: 14px; margin-top: 5px; margin-bottom: 0;">Gestión de inventario de la tienda MASS. Presiona <kbd style="background:#E5E7EB; padding:2px 6px; border-radius:4px; font-weight:700;">Alt + N</kbd> para agregar.</p>
             </div>
-            <div class="user-profile" onclick="let menu = document.getElementById('dropdown'); menu.style.display = menu.style.display === 'none' ? 'block' : 'none';">
+            <div class="user-profile" style="position: relative;" onclick="let menu = document.getElementById('dropdown'); menu.style.display = menu.style.display === 'none' ? 'block' : 'none';">
                 <span>Administrador</span>
                 <div class="avatar">FV</div>
-                <div id="dropdown" style="display: none; position: absolute; top: 55px; right: 0; background: white; border: 1px solid #E5E7EB; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); width: 160px; z-index: 1000; overflow: hidden;">
-                    <a href="../../backend/acciones/cerrar_sesion.php" style="color: #DC2626; padding: 12px 15px; display: flex; align-items: center; text-decoration: none; font-size: 14px; font-weight: 600; transition: 0.2s;" onmouseover="this.style.background='#FEE2E2'" onmouseout="this.style.background='white'">
+                <div id="dropdown" style="display: none; position: absolute; top: 55px; right: 0; background: white; border: 1px solid #E5E7EB; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); width: 170px; z-index: 1000; overflow: hidden;">
+                    <a href="javascript:void(0)" onclick="abrirModalLogout()" style="color: #DC2626; padding: 12px 15px; display: flex; align-items: center; text-decoration: none; font-size: 14px; font-weight: 600; transition: 0.2s;" onmouseover="this.style.background='#FEE2E2'" onmouseout="this.style.background='white'">
                         <i class="fa-solid fa-right-from-bracket" style="margin-right: 10px;"></i> Cerrar Sesión
                     </a>
                 </div>
@@ -543,6 +550,24 @@ $_SESSION['last_activity'] = time();
                     <button type="button" class="btn-cancel" style="flex: 1;" onclick="limpiarFiltrosCatalogo()"><i class="fa-solid fa-eraser"></i> Limpiar</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIRMACIÓN CERRAR SESIÓN (CU: Cerrar Sesión - Flujo Básico 4 & 4.1) -->
+    <div id="modalConfirmarCerrarSesion" class="modal">
+        <div class="modal-content" style="max-width: 420px; text-align: center; padding: 35px 30px;">
+            <span class="close-btn" onclick="cerrarModalLogout()">&times;</span>
+            <div style="width: 60px; height: 60px; background: #FEE2E2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
+                <i class="fa-solid fa-right-from-bracket" style="font-size: 26px; color: #DC2626;"></i>
+            </div>
+            <h2 style="font-size: 20px; margin-bottom: 10px; color: #0F1B2D;">Cerrar Sesión</h2>
+            <p style="color: #4B5563; font-size: 14px; margin-bottom: 25px; font-weight: 500; line-height: 1.5;">
+                ¿Está seguro de que desea cerrar sesión?
+            </p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button type="button" class="btn-cancel" style="flex: 1; padding: 11px;" onclick="cerrarModalLogout()">Cancelar</button>
+                <button type="button" class="btn-save" style="flex: 1; padding: 11px; background: #DC2626; color: white;" onclick="ejecutarCierreSesion()">Cerrar sesión</button>
+            </div>
         </div>
     </div>
 
@@ -1574,19 +1599,41 @@ btnEjecutarDesactivar.onclick = async function () {
             });
         }
 
-        // Búsqueda en tiempo real con debounce
-        if (inputBuscar) {
-            inputBuscar.addEventListener('input', function() {
-                clearTimeout(timerBusqueda);
-                timerBusqueda = setTimeout(() => {
-                    actualizarTabla(1);
-                }, 250);
-            });
+        // ========================================================
+        // CASO DE USO: CERRAR SESIÓN (Flujos 1 a 7, RNF-15)
+        // ========================================================
+        function abrirModalLogout() {
+            const dropdown = document.getElementById('dropdown');
+            if (dropdown) dropdown.style.display = 'none';
+            const modal = document.getElementById('modalConfirmarCerrarSesion');
+            if (modal) modal.style.display = 'flex';
         }
+
+        function cerrarModalLogout() {
+            const modal = document.getElementById('modalConfirmarCerrarSesion');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function ejecutarCierreSesion() {
+            window.location.href = '../../backend/acciones/cerrar_sesion.php';
+        }
+
+        // Flujo Alterno 3.1 & RNF-15: Monitoreo de inactividad por 30 minutos (1,800,000 ms) en el frontend
+        let timerInactividadFrontend;
+        function reiniciarTimerInactividad() {
+            clearTimeout(timerInactividadFrontend);
+            timerInactividadFrontend = setTimeout(() => {
+                window.location.href = '../../backend/acciones/cerrar_sesion.php?timeout=1';
+            }, 1800000);
+        }
+        ['mousemove', 'keydown', 'click', 'scroll'].forEach(evt => {
+            document.addEventListener(evt, reiniciarTimerInactividad);
+        });
 
         window.onload = function() {
             cargarCategorias();
             actualizarTabla(1);
+            reiniciarTimerInactividad();
         };
     </script>
 </body>

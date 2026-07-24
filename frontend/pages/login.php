@@ -1,10 +1,29 @@
 <?php
 session_start();
+
+// Encabezados HTTP para evitar almacenamiento en caché (Flujo 7.1)
+header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
+
 if (isset($_SESSION['usuario_logeado'])) {
     header("Location: productos.php");
     exit();
 }
-$isTimeout = isset($_GET['timeout']) && $_GET['timeout'] == '1';
+
+$alertType = '';
+$alertMessage = '';
+
+if (isset($_GET['logout']) && $_GET['logout'] == '1') {
+    $alertType = 'success';
+    $alertMessage = 'Sesión cerrada correctamente.';
+} elseif (isset($_GET['timeout']) && $_GET['timeout'] == '1') {
+    $alertType = 'warning';
+    $alertMessage = 'Su sesión ha finalizado por inactividad. Vuelva a iniciar sesión.';
+} elseif (isset($_GET['no_session']) && $_GET['no_session'] == '1') {
+    $alertType = 'warning';
+    $alertMessage = 'No existe una sesión activa. Inicie sesión nuevamente.';
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -183,10 +202,16 @@ $isTimeout = isset($_GET['timeout']) && $_GET['timeout'] == '1';
         <div class="login-card-body">
             <p class="login-box-msg">Inicia sesión con tus credenciales</p>
             
+            <!-- Bloque de alerta de estado de sesión (RUP) -->
+            <div id="alertState" style="<?php echo !empty($alertMessage) ? 'display: flex;' : 'display: none;'; ?> <?php echo $alertType === 'success' ? 'background: #DEF7EC; color: #03543F; border: 1px solid #84E1BC;' : 'background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D;'; ?> align-items: center; justify-content: center; gap: 8px; margin-bottom: 20px; padding: 12px 15px; border-radius: 8px; font-size: 13px; font-weight: 600; text-align: center;">
+                <i class="fa-solid <?php echo $alertType === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'; ?>" style="font-size: 16px;"></i>
+                <span id="alertStateText"><?php echo htmlspecialchars($alertMessage); ?></span>
+            </div>
+            
             <!-- Bloque de alerta de error -->
-            <div id="alertError" class="error-msg" style="<?php echo $isTimeout ? 'display: block;' : ''; ?>">
+            <div id="alertError" class="error-msg" style="display: none;">
                 <i class="fa-solid fa-circle-exclamation" style="margin-right: 5px;"></i>
-                <span id="alertErrorText"><?php echo $isTimeout ? 'Su sesión ha expirado por inactividad (30 minutos). Por favor, inicie sesión nuevamente.' : 'Usuario o contraseña incorrectos.'; ?></span>
+                <span id="alertErrorText">Usuario o contraseña incorrectos.</span>
             </div>
             
             <form id="formLogin" novalidate autocomplete="off">
