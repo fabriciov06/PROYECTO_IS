@@ -158,12 +158,17 @@ $_SESSION['last_activity'] = time();
             </div>
         </div>
 
-        <!-- BARRA DE CONTROLES (Buscador a la izquierda, Acciones y Chips a la derecha) -->
+        <!-- BARRA DE CONTROLES (Buscador a la izquierda con botón Buscar, Acciones y Chips a la derecha) -->
         <div class="controls-panel" style="display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
-            <div class="search-actions" style="flex: 1; max-width: 420px; min-width: 260px;">
-                <div style="position: relative; width: 100%;">
-                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; top: 12px; color: #9CA3AF;"></i>
-                    <input type="text" id="inputBuscar" placeholder="Buscar por nombre o código..." style="padding-left: 40px; width: 100%;">
+            <div class="search-actions" style="flex: 1; max-width: 480px; min-width: 280px;">
+                <div style="display: flex; gap: 8px; width: 100%;">
+                    <div style="position: relative; flex: 1;">
+                        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; top: 12px; color: #9CA3AF;"></i>
+                        <input type="text" id="inputBuscar" placeholder="Buscar por nombre o código..." style="padding-left: 40px; width: 100%; height: 100%; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 14px; outline: none;">
+                    </div>
+                    <button type="button" class="btn-filter" id="btnBuscar" onclick="ejecutarBusqueda();" style="background: #0056B3; color: white; border: none; font-weight: 600; padding: 10px 18px; border-radius: 6px; display: flex; align-items: center; gap: 6px; white-space: nowrap; cursor: pointer;">
+                        <i class="fa-solid fa-magnifying-glass"></i> Buscar
+                    </button>
                 </div>
             </div>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
@@ -1330,7 +1335,26 @@ btnEjecutarDesactivar.onclick = async function () {
         let filtroActual = 'Todos';
         let paginaActual = 1;
         let limiteActual = 25;
-        let timerBusqueda = null;
+
+        function ejecutarBusqueda() {
+            if (inputBuscar) {
+                const val = inputBuscar.value.trim();
+                // Flujo Alterno 4.2: Término de búsqueda muy corto (< 2 caracteres)
+                if (val.length === 1) {
+                    mostrarToast('Ingrese al menos 2 caracteres para buscar. Mostrando listado completo.');
+                }
+            }
+            actualizarTabla(1);
+        }
+
+        if (inputBuscar) {
+            inputBuscar.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    ejecutarBusqueda();
+                }
+            });
+        }
 
         function actualizarTabla(pageOverride) {
             if (pageOverride) {
